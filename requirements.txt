@@ -1,0 +1,12 @@
+ lxml
+ streamlit
+ pandas
+ numpy
+ matplotlib
+ seaborn
+ scikit-learn
+ plotly
+ torch
+ sentence-transformers
+ tqdm
+ umap-learn

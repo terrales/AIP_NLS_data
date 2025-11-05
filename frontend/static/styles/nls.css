@@ -1,0 +1,117 @@
+@font-face {
+    font-family: "Inter";
+    src: url("/static/fonts/Inter-Regular.ttf");
+}
+@font-face {
+    font-family: "Inter";
+    font-weight: 500;
+    src: url("/static/fonts/Inter-Medium.ttf");
+}
+@font-face {
+    font-family: "Inter-SemiBold";
+    font-weight: 700;
+    src: url("/static/fonts/Inter-Medium.ttf");
+}
+:root {
+  --app-font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* Use Inter for normal UI text only */
+html, body, .stApp,
+.stMarkdown, .stText, .stButton, .stRadio, .stCheckbox, .stSelectbox,
+input, button, textarea, select, label {
+  font-family: var(--app-font) !important;
+}
+
+.stAppHeader {
+    background-color: transparent;
+}
+
+.stSidebar {
+    border-radius: 0.25rem;
+    margin: 1.5rem;
+}
+body:not(.darkmode) .stSidebar {
+    background-color: white;
+}
+.stVerticalBlock:has(.nls-logo), [data-testid="stSidebarContent"]:has(.nls-logo), .stElementContainer:has(.nls-logo) {
+    position: initial;
+}
+/* --- Sidebar styling --- */
+[data-testid="stSidebar"] {
+    background-color: #ede6f7 !important; /* soft purple, lighter than #611bb8 */
+}
+
+/* --- Top logo positioning --- */
+.nls-logo-top {
+    text-align: center;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+
+.nls-logo-top img {
+    max-width: 80%;
+    height: auto;
+    border-radius: 0.25rem;
+
+/* Optional: dark mode filter if you keep that theme */
+.darkmode .nls-logo img {
+    filter: grayscale(1) invert(1);
+}
+
+footer {
+    align-items: center;
+    background-color: black;
+    bottom: 0;
+    color: white;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.75rem;
+    gap: 1.5rem;
+    justify-content: space-between;
+    left: 0;
+    padding: 1rem 2rem;
+    position: fixed;
+    width: 100%;
+    z-index: 999992;
+}
+.nls-footer__licence {
+    display: flex;
+    gap: 0.75rem;
+}
+.nls-footer__licence svg {
+    flex-shrink: 0;
+}
+footer a {
+    color: white !important;
+}
+
+/* Hide expand-sidebar button when not required */
+.stAppViewContainer:has(#stSidebar[data-expanded="true"]) [data-testid="stSidebarCollapsedControl"] button {
+    display: none;
+}
+/* Accessibly hide siderbar when collapsed */
+#stSidebar[data-expanded="false"] {
+    visibility: hidden;
+}
+/* Show collapse-sidebar button on focus */
+[data-testid="stSidebarCollapseButton"] {
+    display: inline;
+}
+[data-testid="stSidebarCollapseButton"] button {
+    clip: rect(0 0 0 0);
+    clip-path: inset(50%);
+    position: absolute;
+    width: 1px;
+}
+[data-testid="stSidebarCollapseButton"] button:focus-visible, .stSidebar:hover [data-testid="stSidebarCollapseButton"] button {
+    width: auto;
+    clip: auto;
+    clip-path: none;
+    position: relative;
+}
+
+
+
+
+
