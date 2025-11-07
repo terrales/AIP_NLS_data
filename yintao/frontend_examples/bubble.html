@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Click-to-Zoom Book Topics</title>
+    
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        p {
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        /* Styles for the SVG container */
+        #bubble-chart {
+            display: block;
+            margin: 20px auto;
+            background: #ffffff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-width: 900px; /* Max size */
+            width: 100%;      /* Responsive width */
+            height: auto;     /* Maintain aspect ratio */
+            aspect-ratio: 1 / 1; /* Keep it square */
+            cursor: pointer;  /* Indicates it's clickable */
+        }
+
+        /* Style for the bubbles (circles) */
+        .node {
+            transition: stroke-width 0.2s, stroke 0.2s, fill-opacity 0.3s;
+            fill-opacity: 0.7; /* Default opacity */
+        }
+
+        /* Highlight leaf nodes (no children) */
+        .node:not(.node--parent) {
+             fill-opacity: 1;
+        }
+
+        .node:hover {
+            stroke: #000;
+            stroke-width: 2.5px !important; /* Make hover stand out */
+        }
+
+        /* Style for the labels (text) */
+        text {
+            font-family: "Helvetica Neue", Arial, sans-serif;
+            fill: #222;
+            pointer-events: none; /* Text doesn't block mouse events on the circle */
+            text-anchor: middle;
+            alignment-baseline: middle;
+            font-weight: 500;
+            fill-opacity: 0; /* Will be faded in by JS */
+        }
+        
+        /* Style for the labels of parent nodes */
+        .label--parent {
+            font-weight: 600;
+            fill: #111;
+        }
+
+    </style>
+</head>
+<body>
+
+    <h1>D3 Click-to-Zoom Bubble Plot (Book Topics)</h1>
+    <p>Click on a bubble to zoom in. Click the background to zoom out.</p>
+
+    <svg id="bubble-chart"></svg>
+
+    <script>
+        // ---------------------------------
+        // HIERARCHICAL DATA (Nested Dictionary)
+        // ---------------------------------
+        //
+        // *** This is the updated data section ***
+        //
+        const hierarchicalData = {
+            name: "Bookstore",
+            children: [
+                {
+                    name: "Non-Fiction",
+                    children: [
+                        {
+                            name: "Science",
+                            children: [
+                                { 
+                                    name: "Medical",
+                                    children: [
+                                        { name: "Gray's Anatomy", value: 120 },
+                                        { name: "The Body Keeps the Score", value: 90 }
+                                    ]
+                                },
+                                {
+                                    name: "Mathematics",
+                                    children: [
+                                        { name: "Gödel, Escher, Bach", value: 100 },
+                                        { name: "A Brief History of Time", value: 130 }
+                                    ]
+                                },
+                                { name: "Cosmos", value: 110 },
+                                { name: "Sapiens", value: 150 }
+                            ]
+                        },
+                        {
+                            name: "History",
+                            children: [
+                                { name: "Guns, Germs, and Steel", value: 140 },
+                                { name: "1491", value: 80 }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    name: "Fiction",
+                    children: [
+                        {
+                            name: "Children's Story",
+                            children: [
+                                { name: "Where the Wild Things Are", value: 160 },
+                                { name: "Harry Potter", value: 250 },
+                                { name: "The Gruffalo", value: 90 }
+                            ]
+                        },
+                        {
+                            name: "Sci-Fi",
+                            children: [
+                                { name: "Dune", value: 180 },
+                                { name: "Neuromancer", value: 110 }
+                            ]
+                        },
+                        {
+                            name: "Fantasy",
+                            children: [
+                                { name: "Lord of the Rings", value: 220 },
+                                { name: "A Game of Thrones", value: 190 }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        // ---------------------------------
+        // D3.JS VISUALIZATION SCRIPT
+        // (This section is identical to the previous example)
+        // ---------------------------------
+
+        // Define dimensions
+        const width = 900;
+        const height = 900;
+
+        // Create the color scale
+        const color = d3.scaleLinear()
+            .domain([0, 5]) // Max depth of data
+            .range(["hsl(152,80%,80%)", "hsl(228,30%,40%)"])
+            .interpolate(d3.interpolateHcl);
+
+        // --- 1. Create the Layout ---
+        const pack = d3.pack()
+            .size([width, height])
+            .padding(3); // Padding between bubbles
+
+        // --- 2. Process the Data ---
+        const root = d3.hierarchy(hierarchicalData)
+            .sum(d => d.value) // Sum 'value' to set parent sizes
+            .sort((a, b) => b.value - a.value); // Sort bigger bubbles first
+        
+        // Apply the pack layout
+        const rootNode = pack(root);
+
+        // Store the current zoom focus and view
+        let focus = rootNode;
+        let view;
+
+        // --- 3. Setup the SVG Container ---
+        const svg = d3.select("#bubble-chart")
+            .attr("viewBox", `-${width / 2} -${height / 2} ${width} ${height}`)
+            .on("click", (event) => zoom(event, rootNode)); // Click background to zoom out
+
+        // --- 4. Draw the Bubbles (Nodes) ---
+        const node = svg.append("g")
+            .selectAll("circle")
+            .data(rootNode.descendants().slice(1)) // All nodes except the root
+            .join("circle")
+                .attr("class", d => d.children ? "node node--parent" : "node node--leaf")
+                .style("fill", d => color(d.depth))
+                .style("stroke", d => d3.color(color(d.depth)).darker(0.5))
+                .style("stroke-width", 1.5)
+                .on("click", (event, d) => {
+                    if (focus !== d) {
+                        zoom(event, d); // Zoom in
+                        event.stopPropagation(); // Stop click from bubbling to SVG
+                    }
+                });
+
+        // Add a <title> element for native tooltips
+        node.append("title")
+            .text(d => `${d.data.name}\nValue: ${d.value.toLocaleString()}`);
+
+        // --- 5. Draw the Labels (Text) ---
+        const label = svg.append("g")
+            .style("font", "10px sans-serif")
+            .attr("pointer-events", "none")
+            .attr("text-anchor", "middle")
+            .selectAll("text")
+            .data(rootNode.descendants())
+            .join("text")
+                .attr("class", d => d.children ? "label label--parent" : "label label--leaf")
+                .style("fill-opacity", d => d.parent === rootNode ? 1 : 0) // Only show top-level labels initially
+                .style("display", d => d.parent === rootNode ? "inline" : "none") // ""
+                .text(d => d.data.name);
+
+        // --- 6. Implement Zooming ---
+        
+        // Call zoom initially to set the starting position
+        zoomTo([rootNode.x, rootNode.y, rootNode.r * 2]);
+
+        function zoomTo(v) {
+            const k = width / v[2]; // Scale factor
+            view = v;
+
+            // Move and scale all nodes
+            node.attr("transform", d => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
+            node.attr("r", d => d.r * k);
+
+            // Move and scale all labels
+            label.attr("transform", d => `translate(${(d.x - v[0]) * k},${(d.y - v[1]) * k})`);
+            
+            // Adjust label visibility and size
+            label.style("font-size", d => (d.r * k / 3.5) + "px") // Dynamic font size
+                 .style("display", d => (d.r * k < 10) ? "none" : "inline"); // Hide if scaled radius is tiny
+        }
+
+        function zoom(event, d) {
+            focus = d;
+
+            const transition = svg.transition()
+                .duration(750)
+                .tween("zoom", d => {
+                    // Create an interpolator from the current view to the target view
+                    const i = d3.interpolateZoom(view, [focus.x, focus.y, focus.r * 2]);
+                    return t => zoomTo(i(t)); // Call zoomTo on each 'tick' of the transition
+                });
+            
+            // Fade labels in or out
+            label
+                .filter(function(d) { return d.parent === focus || this.style.display === "inline"; })
+                .transition(transition)
+                    .style("fill-opacity", d => d.parent === focus ? 1 : 0)
+                    .on("start", function(d) { if (d.parent === focus) this.style.display = "inline"; })
+                    .on("end", function(d) { if (d.parent !== focus) this.style.display = "none"; });
+        }
+
+    </script>
+
+</body>
+</html>
