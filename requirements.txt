@@ -1,12 +1,16 @@
- lxml
- streamlit
- pandas
- numpy
- matplotlib
- seaborn
- scikit-learn
- plotly
- torch
- sentence-transformers
- tqdm
- umap-learn
+lxml
+streamlit
+pandas
+numpy
+matplotlib
+seaborn
+scikit-learn
+plotly
+torch
+sentence-transformers
+tqdm
+umap-learn
+transformers
+elasticsearch
+torchvision
+bertopic
