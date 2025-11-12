@@ -14,3 +14,5 @@ transformers
 elasticsearch
 torchvision
 bertopic
+jupyter
+openai
