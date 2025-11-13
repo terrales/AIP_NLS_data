@@ -39,7 +39,7 @@ def graph_page():
 
 # an exmaple page to share the bubble graph
 def topic_page():
-    st.title("Most Common Topics")
+    st.title("What are the common topics?")
     languages = ['All', 'English', 'French', 'German', 'Latin', 'Undetermined', 'Italian', 'Russian', 'Spanish', 'Non-linguistic', 'Welsh']
     language2code = {
         'English': 'english',
@@ -63,7 +63,7 @@ def topic_page():
         url = lang_url.format(code=language2code[lang])
 
     st.link_button(label='Click here to check topics', url=url, type='primary')
-    st.markdown(f"![Foo](https://raw.githubusercontent.com/terrales/AIP_NLS_data/b41f08459c99d5e3374e9dae4392f886cb53b9a8/frontend/images/topics.png)")
+    st.markdown(f"![Foo](https://raw.githubusercontent.com/terrales/AIP_NLS_data/refs/heads/main/frontend/images/topics.png)")
 
 # Main function to control app flow
 def main():
@@ -76,7 +76,7 @@ def main():
     """, unsafe_allow_html=True)
 
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Motivation", "Background", "Date", "Type", "Language", "Creator", "Subject", 'Book Topics'])
+    page = st.sidebar.radio("Go to", ["Home", "Motivation", "Background", "Date", "Type", "Language", "Creator", "Subject", 'What are the common topics?'])
 
     if page == "Home":
         home()
@@ -94,7 +94,7 @@ def main():
         graph_page()
     elif page == "Subject":
         graph_page()
-    elif page == 'Book Topics':
+    elif page == 'What are the common topics?':
         topic_page()
 
 if __name__ == "__main__":
