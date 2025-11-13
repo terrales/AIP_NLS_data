@@ -38,12 +38,32 @@ def graph_page():
     st.pyplot(plt)
 
 # an exmaple page to share the bubble graph
-def bubble_page():
-    st.title("Bubble Graph Example")
-    url = "http://3.107.231.237/bubble.html"
-    st.link_button(label='Click here to interact with bubbles', url=url, type='primary')
-    st.markdown(f"![Foo](https://raw.githubusercontent.com/terrales/AIP_NLS_data/b41f08459c99d5e3374e9dae4392f886cb53b9a8/frontend/images/bubble.png)")
+def topic_page():
+    st.title("Most Common Topics")
+    languages = ['All', 'English', 'French', 'German', 'Latin', 'Undetermined', 'Italian', 'Russian', 'Spanish', 'Non-linguistic', 'Welsh']
+    language2code = {
+        'English': 'english',
+        'French': 'french',
+        'German': 'german',
+        'Latin': 'latin',
+        'Undetermined': 'und',
+        'Italian': 'ita',
+        'Russian': 'rus',
+        'Spanish': 'spa',
+        'Non-linguistic': 'zxx',
+        'Welsh': 'wel',
+    }
+    all_lang_url = 'http://3.107.231.237/common_topic_100.html'
+    lang_url = "http://3.107.231.237/{code}_top100_topic.html"
 
+    lang = st.selectbox('Select a language', languages)
+    if lang == 'All':
+        url = all_lang_url
+    else:
+        url = lang_url.format(code=language2code[lang])
+
+    st.link_button(label='Click here to check topics', url=url, type='primary')
+    st.markdown(f"![Foo](https://raw.githubusercontent.com/terrales/AIP_NLS_data/b41f08459c99d5e3374e9dae4392f886cb53b9a8/frontend/images/topics.png)")
 
 # Main function to control app flow
 def main():
@@ -56,7 +76,7 @@ def main():
     """, unsafe_allow_html=True)
 
     st.sidebar.title("Navigation")
-    page = st.sidebar.radio("Go to", ["Home", "Motivation", "Background", "Date", "Type", "Language", "Creator", "Subject", 'Bubble Example'])
+    page = st.sidebar.radio("Go to", ["Home", "Motivation", "Background", "Date", "Type", "Language", "Creator", "Subject", 'Book Topics'])
 
     if page == "Home":
         home()
@@ -74,8 +94,8 @@ def main():
         graph_page()
     elif page == "Subject":
         graph_page()
-    elif page == 'Bubble Example':
-        bubble_page()
+    elif page == 'Book Topics':
+        topic_page()
 
 if __name__ == "__main__":
     main()
