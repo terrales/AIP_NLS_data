@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>English Topic Popularity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">English Topic Popularity</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 508,246 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">Religion and Spirituality: 62611:</span> 62,611</li>
+                <li><span class="font-medium">Economic Policy: 49547:</span> 49,547</li>
+                <li><span class="font-medium">Medicine and Health: 36914:</span> 36,914</li>
+                <li><span class="font-medium">British Local History: 20769:</span> 20,769</li>
+                <li><span class="font-medium">Music and Songs: 19982:</span> 19,982</li>
+                <li><span class="font-medium">Poetry: 18178:</span> 18,178</li>
+                <li><span class="font-medium">Technology and Computing: 16854:</span> 16,854</li>
+                <li><span class="font-medium">Theater and Drama: 14643:</span> 14,643</li>
+                <li><span class="font-medium">Art and Art History: 14137:</span> 14,137</li>
+                <li><span class="font-medium">Education: 12629:</span> 12,629</li>
+                <li><span class="font-medium">Mathematics: 8770:</span> 8,770</li>
+                <li><span class="font-medium">Language and English Education: 8732:</span> 8,732</li>
+                <li><span class="font-medium">Healthcare Management: 6786:</span> 6,786</li>
+                <li><span class="font-medium">Government and Legislation: 6137:</span> 6,137</li>
+                <li><span class="font-medium">Planning Appeals: 6091:</span> 6,091</li>
+                <li><span class="font-medium">Maps: 5848:</span> 5,848</li>
+                <li><span class="font-medium">Politics and government: 5164:</span> 5,164</li>
+                <li><span class="font-medium">Water Management: 4930:</span> 4,930</li>
+                <li><span class="font-medium">Plants and Gardening: 4824:</span> 4,824</li>
+                <li><span class="font-medium">Maps and Atlases: 4785:</span> 4,785</li>
+                <li><span class="font-medium">Cooking: 4684:</span> 4,684</li>
+                <li><span class="font-medium">Sports: 4605:</span> 4,605</li>
+                <li><span class="font-medium">Railways: 4318:</span> 4,318</li>
+                <li><span class="font-medium">Chemistry: 4086:</span> 4,086</li>
+                <li><span class="font-medium">Churches and Cathedrals: 4013:</span> 4,013</li>
+                <li><span class="font-medium">Urban and Regional Planning: 3935:</span> 3,935</li>
+                <li><span class="font-medium">Automobiles: 3917:</span> 3,917</li>
+                <li><span class="font-medium">Book Catalogs and Collecting: 3722:</span> 3,722</li>
+                <li><span class="font-medium">Energy Resources: 3525:</span> 3,525</li>
+                <li><span class="font-medium">Agriculture: 3370:</span> 3,370</li>
+                <li><span class="font-medium">Geology: 3354:</span> 3,354</li>
+                <li><span class="font-medium">Law: 3281:</span> 3,281</li>
+                <li><span class="font-medium">Transportation: 3236:</span> 3,236</li>
+                <li><span class="font-medium">Housing and Land: 2950:</span> 2,950</li>
+                <li><span class="font-medium">Accounting and Auditing: 2941:</span> 2,941</li>
+                <li><span class="font-medium">Sustainability: 2906:</span> 2,906</li>
+                <li><span class="font-medium">Archaeology: 2905:</span> 2,905</li>
+                <li><span class="font-medium">Murder Mystery: 2791:</span> 2,791</li>
+                <li><span class="font-medium">Aviation: 2764:</span> 2,764</li>
+                <li><span class="font-medium">Metallurgy and Materials Science: 2693:</span> 2,693</li>
+                <li><span class="font-medium">Libraries and Information Science: 2653:</span> 2,653</li>
+                <li><span class="font-medium">Classical Antiquity: 2652:</span> 2,652</li>
+                <li><span class="font-medium">Criminal Justice System: 2632:</span> 2,632</li>
+                <li><span class="font-medium">Criminal Justice and Policing: 2615:</span> 2,615</li>
+                <li><span class="font-medium">Social Security and Pensions: 2599:</span> 2,599</li>
+                <li><span class="font-medium">Poetry and Satire: 2596:</span> 2,596</li>
+                <li><span class="font-medium">Philosophy: 2560:</span> 2,560</li>
+                <li><span class="font-medium">Child Welfare: 2536:</span> 2,536</li>
+                <li><span class="font-medium">Electronics and Electricity: 2481:</span> 2,481</li>
+                <li><span class="font-medium">World War II: 2468:</span> 2,468</li>
+                <li><span class="font-medium">Mental Health: 2380:</span> 2,380</li>
+                <li><span class="font-medium">Architecture: 2306:</span> 2,306</li>
+                <li><span class="font-medium">South Asian History and Culture: 2289:</span> 2,289</li>
+                <li><span class="font-medium">Film and Cinema: 2241:</span> 2,241</li>
+                <li><span class="font-medium">Vocational Training: 2240:</span> 2,240</li>
+                <li><span class="font-medium">Legal disputes: 2215:</span> 2,215</li>
+                <li><span class="font-medium">Forestry and Timber: 2076:</span> 2,076</li>
+                <li><span class="font-medium">Biographies and Autobiographies: 2072:</span> 2,072</li>
+                <li><span class="font-medium">Astronomy: 2036:</span> 2,036</li>
+                <li><span class="font-medium">Disability Support: 2007:</span> 2,007</li>
+                <li><span class="font-medium">School Inspections: 1987:</span> 1,987</li>
+                <li><span class="font-medium">Genealogy: 1926:</span> 1,926</li>
+                <li><span class="font-medium">Dairy and Livestock Management: 1910:</span> 1,910</li>
+                <li><span class="font-medium">Africa: 1895:</span> 1,895</li>
+                <li><span class="font-medium">Walking and Hiking: 1885:</span> 1,885</li>
+                <li><span class="font-medium">Maritime транспорт: 1884:</span> 1,884</li>
+                <li><span class="font-medium">Gender Equality: 1880:</span> 1,880</li>
+                <li><span class="font-medium">Political and Royal Affairs: 1832:</span> 1,832</li>
+                <li><span class="font-medium">Western Adventure: 1812:</span> 1,812</li>
+                <li><span class="font-medium">Nursing and Medical Education: 1790:</span> 1,790</li>
+                <li><span class="font-medium">Birds: 1790:</span> 1,790</li>
+                <li><span class="font-medium">Jewish History and Identity: 1789:</span> 1,789</li>
+                <li><span class="font-medium">Marxism and Socialism: 1766:</span> 1,766</li>
+                <li><span class="font-medium">Local Government Complaints: 1759:</span> 1,759</li>
+                <li><span class="font-medium">Feminism and Women's Rights: 1692:</span> 1,692</li>
+                <li><span class="font-medium">LGBTQ+ and Sexuality: 1665:</span> 1,665</li>
+                <li><span class="font-medium">Sports: 1652:</span> 1,652</li>
+                <li><span class="font-medium">Fisheries: 1610:</span> 1,610</li>
+                <li><span class="font-medium">Mining and Coal Industry: 1597:</span> 1,597</li>
+                <li><span class="font-medium">Dogs: 1571:</span> 1,571</li>
+                <li><span class="font-medium">Dictionaries and Language: 1565:</span> 1,565</li>
+                <li><span class="font-medium">Substance Abuse: 1495:</span> 1,495</li>
+                <li><span class="font-medium">Marketing and Sales: 1445:</span> 1,445</li>
+                <li><span class="font-medium">China and Japan: 1433:</span> 1,433</li>
+                <li><span class="font-medium">Animals: 1405:</span> 1,405</li>
+                <li><span class="font-medium">Science Education: 1390:</span> 1,390</li>
+                <li><span class="font-medium">Romance and Marriage: 1363:</span> 1,363</li>
+                <li><span class="font-medium">Agriculture: 1352:</span> 1,352</li>
+                <li><span class="font-medium">Islam: 1344:</span> 1,344</li>
+                <li><span class="font-medium">French Language Learning: 1329:</span> 1,329</li>
+                <li><span class="font-medium">Radioactive Waste Management: 1298:</span> 1,298</li>
+                <li><span class="font-medium">Polar Exploration: 1290:</span> 1,290</li>
+                <li><span class="font-medium">Mountaineering: 1286:</span> 1,286</li>
+                <li><span class="font-medium">Conservation and Biodiversity: 1253:</span> 1,253</li>
+                <li><span class="font-medium">Sociology: 1238:</span> 1,238</li>
+                <li><span class="font-medium">Natural history: 1225:</span> 1,225</li>
+                <li><span class="font-medium">Physics: 1225:</span> 1,225</li>
+                <li><span class="font-medium">Naval history: 1223:</span> 1,223</li>
+                <li><span class="font-medium">Advanced Materials and Nanotechnology: 1218:</span> 1,218</li>
+                <li><span class="font-medium">Geography: 1196:</span> 1,196</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Library Collection",
+    "children": [
+        {
+            "name": "Religion and Spirituality: 62611",
+            "size": 62611
+        },
+        {
+            "name": "Economic Policy: 49547",
+            "size": 49547
+        },
+        {
+            "name": "Medicine and Health: 36914",
+            "size": 36914
+        },
+        {
+            "name": "British Local History: 20769",
+            "size": 20769
+        },
+        {
+            "name": "Music and Songs: 19982",
+            "size": 19982
+        },
+        {
+            "name": "Poetry: 18178",
+            "size": 18178
+        },
+        {
+            "name": "Technology and Computing: 16854",
+            "size": 16854
+        },
+        {
+            "name": "Theater and Drama: 14643",
+            "size": 14643
+        },
+        {
+            "name": "Art and Art History: 14137",
+            "size": 14137
+        },
+        {
+            "name": "Education: 12629",
+            "size": 12629
+        },
+        {
+            "name": "Mathematics: 8770",
+            "size": 8770
+        },
+        {
+            "name": "Language and English Education: 8732",
+            "size": 8732
+        },
+        {
+            "name": "Healthcare Management: 6786",
+            "size": 6786
+        },
+        {
+            "name": "Government and Legislation: 6137",
+            "size": 6137
+        },
+        {
+            "name": "Planning Appeals: 6091",
+            "size": 6091
+        },
+        {
+            "name": "Maps: 5848",
+            "size": 5848
+        },
+        {
+            "name": "Politics and government: 5164",
+            "size": 5164
+        },
+        {
+            "name": "Water Management: 4930",
+            "size": 4930
+        },
+        {
+            "name": "Plants and Gardening: 4824",
+            "size": 4824
+        },
+        {
+            "name": "Maps and Atlases: 4785",
+            "size": 4785
+        },
+        {
+            "name": "Cooking: 4684",
+            "size": 4684
+        },
+        {
+            "name": "Sports: 4605",
+            "size": 4605
+        },
+        {
+            "name": "Railways: 4318",
+            "size": 4318
+        },
+        {
+            "name": "Chemistry: 4086",
+            "size": 4086
+        },
+        {
+            "name": "Churches and Cathedrals: 4013",
+            "size": 4013
+        },
+        {
+            "name": "Urban and Regional Planning: 3935",
+            "size": 3935
+        },
+        {
+            "name": "Automobiles: 3917",
+            "size": 3917
+        },
+        {
+            "name": "Book Catalogs and Collecting: 3722",
+            "size": 3722
+        },
+        {
+            "name": "Energy Resources: 3525",
+            "size": 3525
+        },
+        {
+            "name": "Agriculture: 3370",
+            "size": 3370
+        },
+        {
+            "name": "Geology: 3354",
+            "size": 3354
+        },
+        {
+            "name": "Law: 3281",
+            "size": 3281
+        },
+        {
+            "name": "Transportation: 3236",
+            "size": 3236
+        },
+        {
+            "name": "Housing and Land: 2950",
+            "size": 2950
+        },
+        {
+            "name": "Accounting and Auditing: 2941",
+            "size": 2941
+        },
+        {
+            "name": "Sustainability: 2906",
+            "size": 2906
+        },
+        {
+            "name": "Archaeology: 2905",
+            "size": 2905
+        },
+        {
+            "name": "Murder Mystery: 2791",
+            "size": 2791
+        },
+        {
+            "name": "Aviation: 2764",
+            "size": 2764
+        },
+        {
+            "name": "Metallurgy and Materials Science: 2693",
+            "size": 2693
+        },
+        {
+            "name": "Libraries and Information Science: 2653",
+            "size": 2653
+        },
+        {
+            "name": "Classical Antiquity: 2652",
+            "size": 2652
+        },
+        {
+            "name": "Criminal Justice System: 2632",
+            "size": 2632
+        },
+        {
+            "name": "Criminal Justice and Policing: 2615",
+            "size": 2615
+        },
+        {
+            "name": "Social Security and Pensions: 2599",
+            "size": 2599
+        },
+        {
+            "name": "Poetry and Satire: 2596",
+            "size": 2596
+        },
+        {
+            "name": "Philosophy: 2560",
+            "size": 2560
+        },
+        {
+            "name": "Child Welfare: 2536",
+            "size": 2536
+        },
+        {
+            "name": "Electronics and Electricity: 2481",
+            "size": 2481
+        },
+        {
+            "name": "World War II: 2468",
+            "size": 2468
+        },
+        {
+            "name": "Mental Health: 2380",
+            "size": 2380
+        },
+        {
+            "name": "Architecture: 2306",
+            "size": 2306
+        },
+        {
+            "name": "South Asian History and Culture: 2289",
+            "size": 2289
+        },
+        {
+            "name": "Film and Cinema: 2241",
+            "size": 2241
+        },
+        {
+            "name": "Vocational Training: 2240",
+            "size": 2240
+        },
+        {
+            "name": "Legal disputes: 2215",
+            "size": 2215
+        },
+        {
+            "name": "Forestry and Timber: 2076",
+            "size": 2076
+        },
+        {
+            "name": "Biographies and Autobiographies: 2072",
+            "size": 2072
+        },
+        {
+            "name": "Astronomy: 2036",
+            "size": 2036
+        },
+        {
+            "name": "Disability Support: 2007",
+            "size": 2007
+        },
+        {
+            "name": "School Inspections: 1987",
+            "size": 1987
+        },
+        {
+            "name": "Genealogy: 1926",
+            "size": 1926
+        },
+        {
+            "name": "Dairy and Livestock Management: 1910",
+            "size": 1910
+        },
+        {
+            "name": "Africa: 1895",
+            "size": 1895
+        },
+        {
+            "name": "Walking and Hiking: 1885",
+            "size": 1885
+        },
+        {
+            "name": "Maritime \u0442\u0440\u0430\u043d\u0441\u043f\u043e\u0440\u0442: 1884",
+            "size": 1884
+        },
+        {
+            "name": "Gender Equality: 1880",
+            "size": 1880
+        },
+        {
+            "name": "Political and Royal Affairs: 1832",
+            "size": 1832
+        },
+        {
+            "name": "Western Adventure: 1812",
+            "size": 1812
+        },
+        {
+            "name": "Nursing and Medical Education: 1790",
+            "size": 1790
+        },
+        {
+            "name": "Birds: 1790",
+            "size": 1790
+        },
+        {
+            "name": "Jewish History and Identity: 1789",
+            "size": 1789
+        },
+        {
+            "name": "Marxism and Socialism: 1766",
+            "size": 1766
+        },
+        {
+            "name": "Local Government Complaints: 1759",
+            "size": 1759
+        },
+        {
+            "name": "Feminism and Women's Rights: 1692",
+            "size": 1692
+        },
+        {
+            "name": "LGBTQ+ and Sexuality: 1665",
+            "size": 1665
+        },
+        {
+            "name": "Sports: 1652",
+            "size": 1652
+        },
+        {
+            "name": "Fisheries: 1610",
+            "size": 1610
+        },
+        {
+            "name": "Mining and Coal Industry: 1597",
+            "size": 1597
+        },
+        {
+            "name": "Dogs: 1571",
+            "size": 1571
+        },
+        {
+            "name": "Dictionaries and Language: 1565",
+            "size": 1565
+        },
+        {
+            "name": "Substance Abuse: 1495",
+            "size": 1495
+        },
+        {
+            "name": "Marketing and Sales: 1445",
+            "size": 1445
+        },
+        {
+            "name": "China and Japan: 1433",
+            "size": 1433
+        },
+        {
+            "name": "Animals: 1405",
+            "size": 1405
+        },
+        {
+            "name": "Science Education: 1390",
+            "size": 1390
+        },
+        {
+            "name": "Romance and Marriage: 1363",
+            "size": 1363
+        },
+        {
+            "name": "Agriculture: 1352",
+            "size": 1352
+        },
+        {
+            "name": "Islam: 1344",
+            "size": 1344
+        },
+        {
+            "name": "French Language Learning: 1329",
+            "size": 1329
+        },
+        {
+            "name": "Radioactive Waste Management: 1298",
+            "size": 1298
+        },
+        {
+            "name": "Polar Exploration: 1290",
+            "size": 1290
+        },
+        {
+            "name": "Mountaineering: 1286",
+            "size": 1286
+        },
+        {
+            "name": "Conservation and Biodiversity: 1253",
+            "size": 1253
+        },
+        {
+            "name": "Sociology: 1238",
+            "size": 1238
+        },
+        {
+            "name": "Natural history: 1225",
+            "size": 1225
+        },
+        {
+            "name": "Physics: 1225",
+            "size": 1225
+        },
+        {
+            "name": "Naval history: 1223",
+            "size": 1223
+        },
+        {
+            "name": "Advanced Materials and Nanotechnology: 1218",
+            "size": 1218
+        },
+        {
+            "name": "Geography: 1196",
+            "size": 1196
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(1, d.r / 6))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>

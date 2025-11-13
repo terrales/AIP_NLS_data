@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Russian Topic Popularity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Russian Topic Popularity</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 4,988 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">Russian history and politics: 1319:</span> 1,319</li>
+                <li><span class="font-medium">Russian History and Military: 1267:</span> 1,267</li>
+                <li><span class="font-medium">World War II and Soviet Experience: 462:</span> 462</li>
+                <li><span class="font-medium">Russian Drama and Theater: 134:</span> 134</li>
+                <li><span class="font-medium">Economic and Social History: 126:</span> 126</li>
+                <li><span class="font-medium">Russian Art and Painting: 117:</span> 117</li>
+                <li><span class="font-medium">Russian and Folk Music: 108:</span> 108</li>
+                <li><span class="font-medium">Maps and Cartography of Russia and Surrounding Areas: 101:</span> 101</li>
+                <li><span class="font-medium">Russian Christianity: 101:</span> 101</li>
+                <li><span class="font-medium">Russian language and linguistics: 80:</span> 80</li>
+                <li><span class="font-medium">Aviation Systems and History: 68:</span> 68</li>
+                <li><span class="font-medium">Book Culture and History: 56:</span> 56</li>
+                <li><span class="font-medium">Arctic and Antarctic Exploration: 48:</span> 48</li>
+                <li><span class="font-medium">Russian Philosophy: 42:</span> 42</li>
+                <li><span class="font-medium">Slavic culture and literature: 42:</span> 42</li>
+                <li><span class="font-medium">Aerospace and Rocketry: 40:</span> 40</li>
+                <li><span class="font-medium">Naval History and Operations: 38:</span> 38</li>
+                <li><span class="font-medium">Russian Architecture: 34:</span> 34</li>
+                <li><span class="font-medium">Communism and Socialism: 30:</span> 30</li>
+                <li><span class="font-medium">Computing and Artificial Intelligence: 29:</span> 29</li>
+                <li><span class="font-medium">Soviet Cinema: 29:</span> 29</li>
+                <li><span class="font-medium">Medical and Health Sciences: 29:</span> 29</li>
+                <li><span class="font-medium">Nuclear disarmament: 24:</span> 24</li>
+                <li><span class="font-medium">Russian Poetry: 24:</span> 24</li>
+                <li><span class="font-medium">Libraries and Library Science: 23:</span> 23</li>
+                <li><span class="font-medium">Russian Entrepreneurship History: 23:</span> 23</li>
+                <li><span class="font-medium">Decembrists Movement: 22:</span> 22</li>
+                <li><span class="font-medium">Vladimir Lenin: 19:</span> 19</li>
+                <li><span class="font-medium">Russian Legal System: 19:</span> 19</li>
+                <li><span class="font-medium">Russian Admirals and Naval History: 17:</span> 17</li>
+                <li><span class="font-medium">Soviet agricultural policies: 17:</span> 17</li>
+                <li><span class="font-medium">History of Russian Publishing: 17:</span> 17</li>
+                <li><span class="font-medium">Political ideologies and systems: 15:</span> 15</li>
+                <li><span class="font-medium">Soviet Mountaineering: 15:</span> 15</li>
+                <li><span class="font-medium">Russian Academia and Sciences: 15:</span> 15</li>
+                <li><span class="font-medium">Radar and Radio Systems: 13:</span> 13</li>
+                <li><span class="font-medium">Communist and Soviet Education: 13:</span> 13</li>
+                <li><span class="font-medium">Optoelectronics and Photonics: 12:</span> 12</li>
+                <li><span class="font-medium">World War I (Russian perspective): 12:</span> 12</li>
+                <li><span class="font-medium">Radio Technology: 11:</span> 11</li>
+                <li><span class="font-medium">Political repression in Russia: 11:</span> 11</li>
+                <li><span class="font-medium">Judaism and Antisemitism: 11:</span> 11</li>
+                <li><span class="font-medium">Control Systems Engineering: 11:</span> 11</li>
+                <li><span class="font-medium">Espionage and Intelligence Services: 10:</span> 10</li>
+                <li><span class="font-medium">Education and Pedagogy: 10:</span> 10</li>
+                <li><span class="font-medium">Walter Scott's Influence: 10:</span> 10</li>
+                <li><span class="font-medium">International Security and Cooperation: 10:</span> 10</li>
+                <li><span class="font-medium">Astronomy: 9:</span> 9</li>
+                <li><span class="font-medium">Women's history in Russia: 9:</span> 9</li>
+                <li><span class="font-medium">English Language and Linguistics: 9:</span> 9</li>
+                <li><span class="font-medium">Nazi Germany and its aftermath: 9:</span> 9</li>
+                <li><span class="font-medium">Patriotic War of 1812: 9:</span> 9</li>
+                <li><span class="font-medium">Military tactics and weaponry: 9:</span> 9</li>
+                <li><span class="font-medium">Philosophical Inquiry: 8:</span> 8</li>
+                <li><span class="font-medium">Oil and Gas Industry: 8:</span> 8</li>
+                <li><span class="font-medium">Military Vehicles and Warfare: 7:</span> 7</li>
+                <li><span class="font-medium">Byron and Pushkin Literature: 7:</span> 7</li>
+                <li><span class="font-medium">Detective Fiction: 7:</span> 7</li>
+                <li><span class="font-medium">Electronic Engineering: 7:</span> 7</li>
+                <li><span class="font-medium">Mathematics and Logic: 7:</span> 7</li>
+                <li><span class="font-medium">Physics and Mathematics: 7:</span> 7</li>
+                <li><span class="font-medium">Islamic theology: 7:</span> 7</li>
+                <li><span class="font-medium">Aerodynamics and Supersonic Flight: 7:</span> 7</li>
+                <li><span class="font-medium">Chess and Russia: 7:</span> 7</li>
+                <li><span class="font-medium">Geological Mapping: 6:</span> 6</li>
+                <li><span class="font-medium">Russian Constitutional Law: 6:</span> 6</li>
+                <li><span class="font-medium">Russian Chemistry and Language Dictionaries: 6:</span> 6</li>
+                <li><span class="font-medium">Broadcasting History: 6:</span> 6</li>
+                <li><span class="font-medium">Geology and Earth Sciences: 6:</span> 6</li>
+                <li><span class="font-medium">Alcohol in Russian History: 6:</span> 6</li>
+                <li><span class="font-medium">World Peace and Nonviolence: 6:</span> 6</li>
+                <li><span class="font-medium">Church Slavic Literature: 6:</span> 6</li>
+                <li><span class="font-medium">Linguistics and Language Dictionaries: 6:</span> 6</li>
+                <li><span class="font-medium">Military Engineering: 5:</span> 5</li>
+                <li><span class="font-medium">Russian Railways: 5:</span> 5</li>
+                <li><span class="font-medium">Soviet Semiotics: 5:</span> 5</li>
+                <li><span class="font-medium">Accounting and Auditing: 5:</span> 5</li>
+                <li><span class="font-medium">Technical Literature: 5:</span> 5</li>
+                <li><span class="font-medium">Anarchism: 5:</span> 5</li>
+                <li><span class="font-medium">International Politics and Economics: 5:</span> 5</li>
+                <li><span class="font-medium">Leon Trotsky and Revolutionaries: 5:</span> 5</li>
+                <li><span class="font-medium">Russian Soccer Culture: 5:</span> 5</li>
+                <li><span class="font-medium">Metallurgy and Metallurgical Processes: 4:</span> 4</li>
+                <li><span class="font-medium">Architectural Landmarks: 4:</span> 4</li>
+                <li><span class="font-medium">Philology and Language Studies: 4:</span> 4</li>
+                <li><span class="font-medium">Local Government in Russia: 4:</span> 4</li>
+                <li><span class="font-medium">China and its Political History: 4:</span> 4</li>
+                <li><span class="font-medium">Freemasonry in Russia: 4:</span> 4</li>
+                <li><span class="font-medium">Psychology Publications: 4:</span> 4</li>
+                <li><span class="font-medium">Archaeology and Prehistoric Cultures: 4:</span> 4</li>
+                <li><span class="font-medium">Bulgarian Cultural and Linguistic Heritage: 4:</span> 4</li>
+                <li><span class="font-medium">Wisdom and Sayings: 4:</span> 4</li>
+                <li><span class="font-medium">Naval Engineering: 4:</span> 4</li>
+                <li><span class="font-medium">Russian Culinary Culture: 4:</span> 4</li>
+                <li><span class="font-medium">Russian Heraldry and Emblems: 4:</span> 4</li>
+                <li><span class="font-medium">Russian Folklore Riddles: 4:</span> 4</li>
+                <li><span class="font-medium">Arthur Conan Doyle's Works: 4:</span> 4</li>
+                <li><span class="font-medium">Weather and Meteorology: 4:</span> 4</li>
+                <li><span class="font-medium">Soviet Criminal Justice System: 4:</span> 4</li>
+                <li><span class="font-medium">Russian Almanacs: 4:</span> 4</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Library Collection",
+    "children": [
+        {
+            "name": "Russian history and politics: 1319",
+            "size": 1319
+        },
+        {
+            "name": "Russian History and Military: 1267",
+            "size": 1267
+        },
+        {
+            "name": "World War II and Soviet Experience: 462",
+            "size": 462
+        },
+        {
+            "name": "Russian Drama and Theater: 134",
+            "size": 134
+        },
+        {
+            "name": "Economic and Social History: 126",
+            "size": 126
+        },
+        {
+            "name": "Russian Art and Painting: 117",
+            "size": 117
+        },
+        {
+            "name": "Russian and Folk Music: 108",
+            "size": 108
+        },
+        {
+            "name": "Maps and Cartography of Russia and Surrounding Areas: 101",
+            "size": 101
+        },
+        {
+            "name": "Russian Christianity: 101",
+            "size": 101
+        },
+        {
+            "name": "Russian language and linguistics: 80",
+            "size": 80
+        },
+        {
+            "name": "Aviation Systems and History: 68",
+            "size": 68
+        },
+        {
+            "name": "Book Culture and History: 56",
+            "size": 56
+        },
+        {
+            "name": "Arctic and Antarctic Exploration: 48",
+            "size": 48
+        },
+        {
+            "name": "Russian Philosophy: 42",
+            "size": 42
+        },
+        {
+            "name": "Slavic culture and literature: 42",
+            "size": 42
+        },
+        {
+            "name": "Aerospace and Rocketry: 40",
+            "size": 40
+        },
+        {
+            "name": "Naval History and Operations: 38",
+            "size": 38
+        },
+        {
+            "name": "Russian Architecture: 34",
+            "size": 34
+        },
+        {
+            "name": "Communism and Socialism: 30",
+            "size": 30
+        },
+        {
+            "name": "Computing and Artificial Intelligence: 29",
+            "size": 29
+        },
+        {
+            "name": "Soviet Cinema: 29",
+            "size": 29
+        },
+        {
+            "name": "Medical and Health Sciences: 29",
+            "size": 29
+        },
+        {
+            "name": "Nuclear disarmament: 24",
+            "size": 24
+        },
+        {
+            "name": "Russian Poetry: 24",
+            "size": 24
+        },
+        {
+            "name": "Libraries and Library Science: 23",
+            "size": 23
+        },
+        {
+            "name": "Russian Entrepreneurship History: 23",
+            "size": 23
+        },
+        {
+            "name": "Decembrists Movement: 22",
+            "size": 22
+        },
+        {
+            "name": "Vladimir Lenin: 19",
+            "size": 19
+        },
+        {
+            "name": "Russian Legal System: 19",
+            "size": 19
+        },
+        {
+            "name": "Russian Admirals and Naval History: 17",
+            "size": 17
+        },
+        {
+            "name": "Soviet agricultural policies: 17",
+            "size": 17
+        },
+        {
+            "name": "History of Russian Publishing: 17",
+            "size": 17
+        },
+        {
+            "name": "Political ideologies and systems: 15",
+            "size": 15
+        },
+        {
+            "name": "Soviet Mountaineering: 15",
+            "size": 15
+        },
+        {
+            "name": "Russian Academia and Sciences: 15",
+            "size": 15
+        },
+        {
+            "name": "Radar and Radio Systems: 13",
+            "size": 13
+        },
+        {
+            "name": "Communist and Soviet Education: 13",
+            "size": 13
+        },
+        {
+            "name": "Optoelectronics and Photonics: 12",
+            "size": 12
+        },
+        {
+            "name": "World War I (Russian perspective): 12",
+            "size": 12
+        },
+        {
+            "name": "Radio Technology: 11",
+            "size": 11
+        },
+        {
+            "name": "Political repression in Russia: 11",
+            "size": 11
+        },
+        {
+            "name": "Judaism and Antisemitism: 11",
+            "size": 11
+        },
+        {
+            "name": "Control Systems Engineering: 11",
+            "size": 11
+        },
+        {
+            "name": "Espionage and Intelligence Services: 10",
+            "size": 10
+        },
+        {
+            "name": "Education and Pedagogy: 10",
+            "size": 10
+        },
+        {
+            "name": "Walter Scott's Influence: 10",
+            "size": 10
+        },
+        {
+            "name": "International Security and Cooperation: 10",
+            "size": 10
+        },
+        {
+            "name": "Astronomy: 9",
+            "size": 9
+        },
+        {
+            "name": "Women's history in Russia: 9",
+            "size": 9
+        },
+        {
+            "name": "English Language and Linguistics: 9",
+            "size": 9
+        },
+        {
+            "name": "Nazi Germany and its aftermath: 9",
+            "size": 9
+        },
+        {
+            "name": "Patriotic War of 1812: 9",
+            "size": 9
+        },
+        {
+            "name": "Military tactics and weaponry: 9",
+            "size": 9
+        },
+        {
+            "name": "Philosophical Inquiry: 8",
+            "size": 8
+        },
+        {
+            "name": "Oil and Gas Industry: 8",
+            "size": 8
+        },
+        {
+            "name": "Military Vehicles and Warfare: 7",
+            "size": 7
+        },
+        {
+            "name": "Byron and Pushkin Literature: 7",
+            "size": 7
+        },
+        {
+            "name": "Detective Fiction: 7",
+            "size": 7
+        },
+        {
+            "name": "Electronic Engineering: 7",
+            "size": 7
+        },
+        {
+            "name": "Mathematics and Logic: 7",
+            "size": 7
+        },
+        {
+            "name": "Physics and Mathematics: 7",
+            "size": 7
+        },
+        {
+            "name": "Islamic theology: 7",
+            "size": 7
+        },
+        {
+            "name": "Aerodynamics and Supersonic Flight: 7",
+            "size": 7
+        },
+        {
+            "name": "Chess and Russia: 7",
+            "size": 7
+        },
+        {
+            "name": "Geological Mapping: 6",
+            "size": 6
+        },
+        {
+            "name": "Russian Constitutional Law: 6",
+            "size": 6
+        },
+        {
+            "name": "Russian Chemistry and Language Dictionaries: 6",
+            "size": 6
+        },
+        {
+            "name": "Broadcasting History: 6",
+            "size": 6
+        },
+        {
+            "name": "Geology and Earth Sciences: 6",
+            "size": 6
+        },
+        {
+            "name": "Alcohol in Russian History: 6",
+            "size": 6
+        },
+        {
+            "name": "World Peace and Nonviolence: 6",
+            "size": 6
+        },
+        {
+            "name": "Church Slavic Literature: 6",
+            "size": 6
+        },
+        {
+            "name": "Linguistics and Language Dictionaries: 6",
+            "size": 6
+        },
+        {
+            "name": "Military Engineering: 5",
+            "size": 5
+        },
+        {
+            "name": "Russian Railways: 5",
+            "size": 5
+        },
+        {
+            "name": "Soviet Semiotics: 5",
+            "size": 5
+        },
+        {
+            "name": "Accounting and Auditing: 5",
+            "size": 5
+        },
+        {
+            "name": "Technical Literature: 5",
+            "size": 5
+        },
+        {
+            "name": "Anarchism: 5",
+            "size": 5
+        },
+        {
+            "name": "International Politics and Economics: 5",
+            "size": 5
+        },
+        {
+            "name": "Leon Trotsky and Revolutionaries: 5",
+            "size": 5
+        },
+        {
+            "name": "Russian Soccer Culture: 5",
+            "size": 5
+        },
+        {
+            "name": "Metallurgy and Metallurgical Processes: 4",
+            "size": 4
+        },
+        {
+            "name": "Architectural Landmarks: 4",
+            "size": 4
+        },
+        {
+            "name": "Philology and Language Studies: 4",
+            "size": 4
+        },
+        {
+            "name": "Local Government in Russia: 4",
+            "size": 4
+        },
+        {
+            "name": "China and its Political History: 4",
+            "size": 4
+        },
+        {
+            "name": "Freemasonry in Russia: 4",
+            "size": 4
+        },
+        {
+            "name": "Psychology Publications: 4",
+            "size": 4
+        },
+        {
+            "name": "Archaeology and Prehistoric Cultures: 4",
+            "size": 4
+        },
+        {
+            "name": "Bulgarian Cultural and Linguistic Heritage: 4",
+            "size": 4
+        },
+        {
+            "name": "Wisdom and Sayings: 4",
+            "size": 4
+        },
+        {
+            "name": "Naval Engineering: 4",
+            "size": 4
+        },
+        {
+            "name": "Russian Culinary Culture: 4",
+            "size": 4
+        },
+        {
+            "name": "Russian Heraldry and Emblems: 4",
+            "size": 4
+        },
+        {
+            "name": "Russian Folklore Riddles: 4",
+            "size": 4
+        },
+        {
+            "name": "Arthur Conan Doyle's Works: 4",
+            "size": 4
+        },
+        {
+            "name": "Weather and Meteorology: 4",
+            "size": 4
+        },
+        {
+            "name": "Soviet Criminal Justice System: 4",
+            "size": 4
+        },
+        {
+            "name": "Russian Almanacs: 4",
+            "size": 4
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(1, d.r / 6))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Budget Allocation</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Project Budget Allocation</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 1,810,000 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">R&D:</span> 450,000</li>
+                <li><span class="font-medium">Marketing:</span> 220,000</li>
+                <li><span class="font-medium">Operations:</span> 650,000</li>
+                <li><span class="font-medium">HR:</span> 110,000</li>
+                <li><span class="font-medium">Sales:</span> 380,000</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Company Budget",
+    "children": [
+        {
+            "name": "R&D",
+            "size": 450000
+        },
+        {
+            "name": "Marketing",
+            "size": 220000
+        },
+        {
+            "name": "Operations",
+            "size": 650000
+        },
+        {
+            "name": "HR",
+            "size": 110000
+        },
+        {
+            "name": "Sales",
+            "size": 380000
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>

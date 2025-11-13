@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Italian Topic Popularity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Italian Topic Popularity</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 7,699 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">Diverse cultural history: 1433:</span> 1,433</li>
+                <li><span class="font-medium">Italian Art and Artists: 674:</span> 674</li>
+                <li><span class="font-medium">Italian History: 645:</span> 645</li>
+                <li><span class="font-medium">Mountaineering: 420:</span> 420</li>
+                <li><span class="font-medium">Catholic Church: 402:</span> 402</li>
+                <li><span class="font-medium">Government Regulations: 385:</span> 385</li>
+                <li><span class="font-medium">Italian Music and Opera: 343:</span> 343</li>
+                <li><span class="font-medium">Food trade regulation: 230:</span> 230</li>
+                <li><span class="font-medium">Libraries and Publishing: 224:</span> 224</li>
+                <li><span class="font-medium">Italian Theater and Drama: 208:</span> 208</li>
+                <li><span class="font-medium">Saving Schemes: 182:</span> 182</li>
+                <li><span class="font-medium">Catholic Church Practices: 172:</span> 172</li>
+                <li><span class="font-medium">Ancient Rome: 161:</span> 161</li>
+                <li><span class="font-medium">Dante Alighieri: 138:</span> 138</li>
+                <li><span class="font-medium">Italian Language: 117:</span> 117</li>
+                <li><span class="font-medium">Cartography: 115:</span> 115</li>
+                <li><span class="font-medium">Fascism: 107:</span> 107</li>
+                <li><span class="font-medium">Economic and Social Issues: 105:</span> 105</li>
+                <li><span class="font-medium">Medicine and Health: 102:</span> 102</li>
+                <li><span class="font-medium">Italian Leftist Politics: 80:</span> 80</li>
+                <li><span class="font-medium">Italian Cinema: 78:</span> 78</li>
+                <li><span class="font-medium">Urban infrastructure: 58:</span> 58</li>
+                <li><span class="font-medium">Architecture: 52:</span> 52</li>
+                <li><span class="font-medium">Mathematics: 51:</span> 51</li>
+                <li><span class="font-medium">Poetry: 48:</span> 48</li>
+                <li><span class="font-medium">Learned Societies: 45:</span> 45</li>
+                <li><span class="font-medium">Architecture: 44:</span> 44</li>
+                <li><span class="font-medium">Italian Resistance in World War II: 43:</span> 43</li>
+                <li><span class="font-medium">Public Health and Epidemics: 38:</span> 38</li>
+                <li><span class="font-medium">Philosophy: 37:</span> 37</li>
+                <li><span class="font-medium">Italian Political History: 35:</span> 35</li>
+                <li><span class="font-medium">Humanism: 33:</span> 33</li>
+                <li><span class="font-medium">Italian journalism: 33:</span> 33</li>
+                <li><span class="font-medium">Classical Literature: 32:</span> 32</li>
+                <li><span class="font-medium">Archaeology: 31:</span> 31</li>
+                <li><span class="font-medium">Italian Political System: 28:</span> 28</li>
+                <li><span class="font-medium">Machiavelli Studies: 27:</span> 27</li>
+                <li><span class="font-medium">Renaissance: 25:</span> 25</li>
+                <li><span class="font-medium">British Heritage: 23:</span> 23</li>
+                <li><span class="font-medium">Jewish History: 23:</span> 23</li>
+                <li><span class="font-medium">Italian Philosophy: 23:</span> 23</li>
+                <li><span class="font-medium">Christian Art: 21:</span> 21</li>
+                <li><span class="font-medium">Libraries: 20:</span> 20</li>
+                <li><span class="font-medium">Pier Paolo Pasolini: 18:</span> 18</li>
+                <li><span class="font-medium">Property Contracts: 18:</span> 18</li>
+                <li><span class="font-medium">Debt and Creditor Relations: 17:</span> 17</li>
+                <li><span class="font-medium">Polish Culture: 17:</span> 17</li>
+                <li><span class="font-medium">Walter Scott: 17:</span> 17</li>
+                <li><span class="font-medium">World War I: 16:</span> 16</li>
+                <li><span class="font-medium">Italian Statesmen: 16:</span> 16</li>
+                <li><span class="font-medium">Urban Planning: 16:</span> 16</li>
+                <li><span class="font-medium">Astronomy: 16:</span> 16</li>
+                <li><span class="font-medium">Numismatics: 15:</span> 15</li>
+                <li><span class="font-medium">Software Development: 15:</span> 15</li>
+                <li><span class="font-medium">Satire and Criticism: 15:</span> 15</li>
+                <li><span class="font-medium">Aesthetics: 14:</span> 14</li>
+                <li><span class="font-medium">Italian Culinary Arts: 14:</span> 14</li>
+                <li><span class="font-medium">Mafia: 13:</span> 13</li>
+                <li><span class="font-medium">Switzerland Tourism: 13:</span> 13</li>
+                <li><span class="font-medium">Benedetto Croce: 13:</span> 13</li>
+                <li><span class="font-medium">Photography: 13:</span> 13</li>
+                <li><span class="font-medium">Geology: 13:</span> 13</li>
+                <li><span class="font-medium">Italian News: 12:</span> 12</li>
+                <li><span class="font-medium">Church Architecture: 12:</span> 12</li>
+                <li><span class="font-medium">World War I: 12:</span> 12</li>
+                <li><span class="font-medium">Medieval Culture: 11:</span> 11</li>
+                <li><span class="font-medium">Alpine Skiing: 10:</span> 10</li>
+                <li><span class="font-medium">Stenography: 10:</span> 10</li>
+                <li><span class="font-medium">Gardens and Botany: 10:</span> 10</li>
+                <li><span class="font-medium">Legal History: 10:</span> 10</li>
+                <li><span class="font-medium">Polar Exploration: 9:</span> 9</li>
+                <li><span class="font-medium">Accounting: 9:</span> 9</li>
+                <li><span class="font-medium">Galileo Galilei: 9:</span> 9</li>
+                <li><span class="font-medium">Education: 9:</span> 9</li>
+                <li><span class="font-medium">Virgil: 9:</span> 9</li>
+                <li><span class="font-medium">Russian History: 9:</span> 9</li>
+                <li><span class="font-medium">Journalism: 8:</span> 8</li>
+                <li><span class="font-medium">Psychology: 8:</span> 8</li>
+                <li><span class="font-medium">Classical Languages: 8:</span> 8</li>
+                <li><span class="font-medium">Historiography: 8:</span> 8</li>
+                <li><span class="font-medium">Italian Cartography: 8:</span> 8</li>
+                <li><span class="font-medium">Philosophy: 8:</span> 8</li>
+                <li><span class="font-medium">Women's Studies: 8:</span> 8</li>
+                <li><span class="font-medium">Exploration Era: 8:</span> 8</li>
+                <li><span class="font-medium">Spanish Literature: 8:</span> 8</li>
+                <li><span class="font-medium">Medieval Commerce: 8:</span> 8</li>
+                <li><span class="font-medium">Classical Greek Literature: 7:</span> 7</li>
+                <li><span class="font-medium">Latin America Exploration: 7:</span> 7</li>
+                <li><span class="font-medium">Geological Maps: 7:</span> 7</li>
+                <li><span class="font-medium">Charles V: 7:</span> 7</li>
+                <li><span class="font-medium">Medieval Literature: 7:</span> 7</li>
+                <li><span class="font-medium">Prison Reform: 7:</span> 7</li>
+                <li><span class="font-medium">Law and Jurisprudence: 7:</span> 7</li>
+                <li><span class="font-medium">Fiat Automobiles: 7:</span> 7</li>
+                <li><span class="font-medium">Freemasonry: 7:</span> 7</li>
+                <li><span class="font-medium">Costume History: 7:</span> 7</li>
+                <li><span class="font-medium">Italian Volcanoes: 7:</span> 7</li>
+                <li><span class="font-medium">Wine Industry: 7:</span> 7</li>
+                <li><span class="font-medium">Military Fortifications: 7:</span> 7</li>
+                <li><span class="font-medium">Agriculture: 7:</span> 7</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Library Collection",
+    "children": [
+        {
+            "name": "Diverse cultural history: 1433",
+            "size": 1433
+        },
+        {
+            "name": "Italian Art and Artists: 674",
+            "size": 674
+        },
+        {
+            "name": "Italian History: 645",
+            "size": 645
+        },
+        {
+            "name": "Mountaineering: 420",
+            "size": 420
+        },
+        {
+            "name": "Catholic Church: 402",
+            "size": 402
+        },
+        {
+            "name": "Government Regulations: 385",
+            "size": 385
+        },
+        {
+            "name": "Italian Music and Opera: 343",
+            "size": 343
+        },
+        {
+            "name": "Food trade regulation: 230",
+            "size": 230
+        },
+        {
+            "name": "Libraries and Publishing: 224",
+            "size": 224
+        },
+        {
+            "name": "Italian Theater and Drama: 208",
+            "size": 208
+        },
+        {
+            "name": "Saving Schemes: 182",
+            "size": 182
+        },
+        {
+            "name": "Catholic Church Practices: 172",
+            "size": 172
+        },
+        {
+            "name": "Ancient Rome: 161",
+            "size": 161
+        },
+        {
+            "name": "Dante Alighieri: 138",
+            "size": 138
+        },
+        {
+            "name": "Italian Language: 117",
+            "size": 117
+        },
+        {
+            "name": "Cartography: 115",
+            "size": 115
+        },
+        {
+            "name": "Fascism: 107",
+            "size": 107
+        },
+        {
+            "name": "Economic and Social Issues: 105",
+            "size": 105
+        },
+        {
+            "name": "Medicine and Health: 102",
+            "size": 102
+        },
+        {
+            "name": "Italian Leftist Politics: 80",
+            "size": 80
+        },
+        {
+            "name": "Italian Cinema: 78",
+            "size": 78
+        },
+        {
+            "name": "Urban infrastructure: 58",
+            "size": 58
+        },
+        {
+            "name": "Architecture: 52",
+            "size": 52
+        },
+        {
+            "name": "Mathematics: 51",
+            "size": 51
+        },
+        {
+            "name": "Poetry: 48",
+            "size": 48
+        },
+        {
+            "name": "Learned Societies: 45",
+            "size": 45
+        },
+        {
+            "name": "Architecture: 44",
+            "size": 44
+        },
+        {
+            "name": "Italian Resistance in World War II: 43",
+            "size": 43
+        },
+        {
+            "name": "Public Health and Epidemics: 38",
+            "size": 38
+        },
+        {
+            "name": "Philosophy: 37",
+            "size": 37
+        },
+        {
+            "name": "Italian Political History: 35",
+            "size": 35
+        },
+        {
+            "name": "Humanism: 33",
+            "size": 33
+        },
+        {
+            "name": "Italian journalism: 33",
+            "size": 33
+        },
+        {
+            "name": "Classical Literature: 32",
+            "size": 32
+        },
+        {
+            "name": "Archaeology: 31",
+            "size": 31
+        },
+        {
+            "name": "Italian Political System: 28",
+            "size": 28
+        },
+        {
+            "name": "Machiavelli Studies: 27",
+            "size": 27
+        },
+        {
+            "name": "Renaissance: 25",
+            "size": 25
+        },
+        {
+            "name": "British Heritage: 23",
+            "size": 23
+        },
+        {
+            "name": "Jewish History: 23",
+            "size": 23
+        },
+        {
+            "name": "Italian Philosophy: 23",
+            "size": 23
+        },
+        {
+            "name": "Christian Art: 21",
+            "size": 21
+        },
+        {
+            "name": "Libraries: 20",
+            "size": 20
+        },
+        {
+            "name": "Pier Paolo Pasolini: 18",
+            "size": 18
+        },
+        {
+            "name": "Property Contracts: 18",
+            "size": 18
+        },
+        {
+            "name": "Debt and Creditor Relations: 17",
+            "size": 17
+        },
+        {
+            "name": "Polish Culture: 17",
+            "size": 17
+        },
+        {
+            "name": "Walter Scott: 17",
+            "size": 17
+        },
+        {
+            "name": "World War I: 16",
+            "size": 16
+        },
+        {
+            "name": "Italian Statesmen: 16",
+            "size": 16
+        },
+        {
+            "name": "Urban Planning: 16",
+            "size": 16
+        },
+        {
+            "name": "Astronomy: 16",
+            "size": 16
+        },
+        {
+            "name": "Numismatics: 15",
+            "size": 15
+        },
+        {
+            "name": "Software Development: 15",
+            "size": 15
+        },
+        {
+            "name": "Satire and Criticism: 15",
+            "size": 15
+        },
+        {
+            "name": "Aesthetics: 14",
+            "size": 14
+        },
+        {
+            "name": "Italian Culinary Arts: 14",
+            "size": 14
+        },
+        {
+            "name": "Mafia: 13",
+            "size": 13
+        },
+        {
+            "name": "Switzerland Tourism: 13",
+            "size": 13
+        },
+        {
+            "name": "Benedetto Croce: 13",
+            "size": 13
+        },
+        {
+            "name": "Photography: 13",
+            "size": 13
+        },
+        {
+            "name": "Geology: 13",
+            "size": 13
+        },
+        {
+            "name": "Italian News: 12",
+            "size": 12
+        },
+        {
+            "name": "Church Architecture: 12",
+            "size": 12
+        },
+        {
+            "name": "World War I: 12",
+            "size": 12
+        },
+        {
+            "name": "Medieval Culture: 11",
+            "size": 11
+        },
+        {
+            "name": "Alpine Skiing: 10",
+            "size": 10
+        },
+        {
+            "name": "Stenography: 10",
+            "size": 10
+        },
+        {
+            "name": "Gardens and Botany: 10",
+            "size": 10
+        },
+        {
+            "name": "Legal History: 10",
+            "size": 10
+        },
+        {
+            "name": "Polar Exploration: 9",
+            "size": 9
+        },
+        {
+            "name": "Accounting: 9",
+            "size": 9
+        },
+        {
+            "name": "Galileo Galilei: 9",
+            "size": 9
+        },
+        {
+            "name": "Education: 9",
+            "size": 9
+        },
+        {
+            "name": "Virgil: 9",
+            "size": 9
+        },
+        {
+            "name": "Russian History: 9",
+            "size": 9
+        },
+        {
+            "name": "Journalism: 8",
+            "size": 8
+        },
+        {
+            "name": "Psychology: 8",
+            "size": 8
+        },
+        {
+            "name": "Classical Languages: 8",
+            "size": 8
+        },
+        {
+            "name": "Historiography: 8",
+            "size": 8
+        },
+        {
+            "name": "Italian Cartography: 8",
+            "size": 8
+        },
+        {
+            "name": "Philosophy: 8",
+            "size": 8
+        },
+        {
+            "name": "Women's Studies: 8",
+            "size": 8
+        },
+        {
+            "name": "Exploration Era: 8",
+            "size": 8
+        },
+        {
+            "name": "Spanish Literature: 8",
+            "size": 8
+        },
+        {
+            "name": "Medieval Commerce: 8",
+            "size": 8
+        },
+        {
+            "name": "Classical Greek Literature: 7",
+            "size": 7
+        },
+        {
+            "name": "Latin America Exploration: 7",
+            "size": 7
+        },
+        {
+            "name": "Geological Maps: 7",
+            "size": 7
+        },
+        {
+            "name": "Charles V: 7",
+            "size": 7
+        },
+        {
+            "name": "Medieval Literature: 7",
+            "size": 7
+        },
+        {
+            "name": "Prison Reform: 7",
+            "size": 7
+        },
+        {
+            "name": "Law and Jurisprudence: 7",
+            "size": 7
+        },
+        {
+            "name": "Fiat Automobiles: 7",
+            "size": 7
+        },
+        {
+            "name": "Freemasonry: 7",
+            "size": 7
+        },
+        {
+            "name": "Costume History: 7",
+            "size": 7
+        },
+        {
+            "name": "Italian Volcanoes: 7",
+            "size": 7
+        },
+        {
+            "name": "Wine Industry: 7",
+            "size": 7
+        },
+        {
+            "name": "Military Fortifications: 7",
+            "size": 7
+        },
+        {
+            "name": "Agriculture: 7",
+            "size": 7
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(1, d.r / 6))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>

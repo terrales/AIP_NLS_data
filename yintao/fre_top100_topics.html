@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>French Topic Popularity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">French Topic Popularity</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 16,290 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">Religion and Christianity: 1682:</span> 1,682</li>
+                <li><span class="font-medium">French Literature: 1660:</span> 1,660</li>
+                <li><span class="font-medium">Art and Artists: 1274:</span> 1,274</li>
+                <li><span class="font-medium">Theater and Drama: 982:</span> 982</li>
+                <li><span class="font-medium">French Revolution: 831:</span> 831</li>
+                <li><span class="font-medium">Economic History: 763:</span> 763</li>
+                <li><span class="font-medium">French language: 620:</span> 620</li>
+                <li><span class="font-medium">Geography and Cartography: 605:</span> 605</li>
+                <li><span class="font-medium">Music: 537:</span> 537</li>
+                <li><span class="font-medium">Book History: 484:</span> 484</li>
+                <li><span class="font-medium">Mountaineering: 380:</span> 380</li>
+                <li><span class="font-medium">French Literature: 372:</span> 372</li>
+                <li><span class="font-medium">French Monarchy: 312:</span> 312</li>
+                <li><span class="font-medium">Philosophy: 265:</span> 265</li>
+                <li><span class="font-medium">Classical Antiquity: 251:</span> 251</li>
+                <li><span class="font-medium">French Resistance and Occupation (WWII): 237:</span> 237</li>
+                <li><span class="font-medium">Socialism and Communism: 176:</span> 176</li>
+                <li><span class="font-medium">Political Dynamics: 174:</span> 174</li>
+                <li><span class="font-medium">Cinema: 155:</span> 155</li>
+                <li><span class="font-medium">Poetry: 145:</span> 145</li>
+                <li><span class="font-medium">Medicine and Health Sciences: 145:</span> 145</li>
+                <li><span class="font-medium">Napoleon Bonaparte: 124:</span> 124</li>
+                <li><span class="font-medium">Paris: 109:</span> 109</li>
+                <li><span class="font-medium">British Isles: 104:</span> 104</li>
+                <li><span class="font-medium">Gastronomy: 103:</span> 103</li>
+                <li><span class="font-medium">Switzerland Travel: 95:</span> 95</li>
+                <li><span class="font-medium">Law and Jurisprudence: 95:</span> 95</li>
+                <li><span class="font-medium">French Regional History: 90:</span> 90</li>
+                <li><span class="font-medium">Architecture: 90:</span> 90</li>
+                <li><span class="font-medium">Archaeology: 87:</span> 87</li>
+                <li><span class="font-medium">Medieval French Literature: 79:</span> 79</li>
+                <li><span class="font-medium">Finance and Taxation: 74:</span> 74</li>
+                <li><span class="font-medium">Medieval Europe: 73:</span> 73</li>
+                <li><span class="font-medium">Education: 73:</span> 73</li>
+                <li><span class="font-medium">Jean-Jacques Rousseau: 71:</span> 71</li>
+                <li><span class="font-medium">Italy: 70:</span> 70</li>
+                <li><span class="font-medium">Mathematics: 69:</span> 69</li>
+                <li><span class="font-medium">Polar Exploration: 68:</span> 68</li>
+                <li><span class="font-medium">Jewish History and Culture: 68:</span> 68</li>
+                <li><span class="font-medium">Transportation Policy: 68:</span> 68</li>
+                <li><span class="font-medium">Classical Literature: 64:</span> 64</li>
+                <li><span class="font-medium">Toxicology and Environmental Testing: 63:</span> 63</li>
+                <li><span class="font-medium">African Exploration and Colonialism: 61:</span> 61</li>
+                <li><span class="font-medium">European Integration: 61:</span> 61</li>
+                <li><span class="font-medium">Russian Literature: 59:</span> 59</li>
+                <li><span class="font-medium">Cathedrals and Churches: 58:</span> 58</li>
+                <li><span class="font-medium">Agriculture: 58:</span> 58</li>
+                <li><span class="font-medium">Libraries: 57:</span> 57</li>
+                <li><span class="font-medium">Voltaire: 57:</span> 57</li>
+                <li><span class="font-medium">Feminism and Women's Rights: 56:</span> 56</li>
+                <li><span class="font-medium">World War I: 56:</span> 56</li>
+                <li><span class="font-medium">Fables: 56:</span> 56</li>
+                <li><span class="font-medium">Blaise Pascal: 56:</span> 56</li>
+                <li><span class="font-medium">Satire: 54:</span> 54</li>
+                <li><span class="font-medium">Stendhal: 54:</span> 54</li>
+                <li><span class="font-medium">Algerian history: 54:</span> 54</li>
+                <li><span class="font-medium">Russian History: 52:</span> 52</li>
+                <li><span class="font-medium">French Literature: 51:</span> 51</li>
+                <li><span class="font-medium">Academic Societies: 51:</span> 51</li>
+                <li><span class="font-medium">Geology and Mineralogy: 49:</span> 49</li>
+                <li><span class="font-medium">Victor Hugo: 45:</span> 45</li>
+                <li><span class="font-medium">Urban Planning: 44:</span> 44</li>
+                <li><span class="font-medium">European Travel: 43:</span> 43</li>
+                <li><span class="font-medium">Natural History: 43:</span> 43</li>
+                <li><span class="font-medium">Stenography: 42:</span> 42</li>
+                <li><span class="font-medium">Belgium and Low Countries: 41:</span> 41</li>
+                <li><span class="font-medium">Montaigne Studies: 41:</span> 41</li>
+                <li><span class="font-medium">Astronomy: 41:</span> 41</li>
+                <li><span class="font-medium">Linguistics: 40:</span> 40</li>
+                <li><span class="font-medium">Moral Philosophy: 40:</span> 40</li>
+                <li><span class="font-medium">George Sand: 40:</span> 40</li>
+                <li><span class="font-medium">Eastern European History and Culture: 39:</span> 39</li>
+                <li><span class="font-medium">Botany: 39:</span> 39</li>
+                <li><span class="font-medium">Law and Justice: 39:</span> 39</li>
+                <li><span class="font-medium">Renaissance: 39:</span> 39</li>
+                <li><span class="font-medium">French-Canadian literature: 39:</span> 39</li>
+                <li><span class="font-medium">François Rabelais: 39:</span> 39</li>
+                <li><span class="font-medium">Spanish Literature: 38:</span> 38</li>
+                <li><span class="font-medium">Textual Documentation: 38:</span> 38</li>
+                <li><span class="font-medium">Islam: 38:</span> 38</li>
+                <li><span class="font-medium">Memoirs: 38:</span> 38</li>
+                <li><span class="font-medium">Mary, Queen of Scots: 37:</span> 37</li>
+                <li><span class="font-medium">Joan of Arc: 37:</span> 37</li>
+                <li><span class="font-medium">Alexandre Dumas: 37:</span> 37</li>
+                <li><span class="font-medium">Descartes: 37:</span> 37</li>
+                <li><span class="font-medium">Freemasonry: 37:</span> 37</li>
+                <li><span class="font-medium">Jean-Paul Sartre: 36:</span> 36</li>
+                <li><span class="font-medium">Law and Legal Systems: 36:</span> 36</li>
+                <li><span class="font-medium">Alphonse and Léon Daudet: 36:</span> 36</li>
+                <li><span class="font-medium">Ancient Egypt: 35:</span> 35</li>
+                <li><span class="font-medium">Psychoanalysis: 35:</span> 35</li>
+                <li><span class="font-medium">World War I: 34:</span> 34</li>
+                <li><span class="font-medium">Celtic Culture: 34:</span> 34</li>
+                <li><span class="font-medium">Tales and Stories: 33:</span> 33</li>
+                <li><span class="font-medium">Fascism and Holocaust: 33:</span> 33</li>
+                <li><span class="font-medium">Italian Literature: 33:</span> 33</li>
+                <li><span class="font-medium">Enlightenment: 33:</span> 33</li>
+                <li><span class="font-medium">Greek Philosophy: 32:</span> 32</li>
+                <li><span class="font-medium">Photography: 31:</span> 31</li>
+                <li><span class="font-medium">Montesquieu: 31:</span> 31</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Library Collection",
+    "children": [
+        {
+            "name": "Religion and Christianity: 1682",
+            "size": 1682
+        },
+        {
+            "name": "French Literature: 1660",
+            "size": 1660
+        },
+        {
+            "name": "Art and Artists: 1274",
+            "size": 1274
+        },
+        {
+            "name": "Theater and Drama: 982",
+            "size": 982
+        },
+        {
+            "name": "French Revolution: 831",
+            "size": 831
+        },
+        {
+            "name": "Economic History: 763",
+            "size": 763
+        },
+        {
+            "name": "French language: 620",
+            "size": 620
+        },
+        {
+            "name": "Geography and Cartography: 605",
+            "size": 605
+        },
+        {
+            "name": "Music: 537",
+            "size": 537
+        },
+        {
+            "name": "Book History: 484",
+            "size": 484
+        },
+        {
+            "name": "Mountaineering: 380",
+            "size": 380
+        },
+        {
+            "name": "French Literature: 372",
+            "size": 372
+        },
+        {
+            "name": "French Monarchy: 312",
+            "size": 312
+        },
+        {
+            "name": "Philosophy: 265",
+            "size": 265
+        },
+        {
+            "name": "Classical Antiquity: 251",
+            "size": 251
+        },
+        {
+            "name": "French Resistance and Occupation (WWII): 237",
+            "size": 237
+        },
+        {
+            "name": "Socialism and Communism: 176",
+            "size": 176
+        },
+        {
+            "name": "Political Dynamics: 174",
+            "size": 174
+        },
+        {
+            "name": "Cinema: 155",
+            "size": 155
+        },
+        {
+            "name": "Poetry: 145",
+            "size": 145
+        },
+        {
+            "name": "Medicine and Health Sciences: 145",
+            "size": 145
+        },
+        {
+            "name": "Napoleon Bonaparte: 124",
+            "size": 124
+        },
+        {
+            "name": "Paris: 109",
+            "size": 109
+        },
+        {
+            "name": "British Isles: 104",
+            "size": 104
+        },
+        {
+            "name": "Gastronomy: 103",
+            "size": 103
+        },
+        {
+            "name": "Switzerland Travel: 95",
+            "size": 95
+        },
+        {
+            "name": "Law and Jurisprudence: 95",
+            "size": 95
+        },
+        {
+            "name": "French Regional History: 90",
+            "size": 90
+        },
+        {
+            "name": "Architecture: 90",
+            "size": 90
+        },
+        {
+            "name": "Archaeology: 87",
+            "size": 87
+        },
+        {
+            "name": "Medieval French Literature: 79",
+            "size": 79
+        },
+        {
+            "name": "Finance and Taxation: 74",
+            "size": 74
+        },
+        {
+            "name": "Medieval Europe: 73",
+            "size": 73
+        },
+        {
+            "name": "Education: 73",
+            "size": 73
+        },
+        {
+            "name": "Jean-Jacques Rousseau: 71",
+            "size": 71
+        },
+        {
+            "name": "Italy: 70",
+            "size": 70
+        },
+        {
+            "name": "Mathematics: 69",
+            "size": 69
+        },
+        {
+            "name": "Polar Exploration: 68",
+            "size": 68
+        },
+        {
+            "name": "Jewish History and Culture: 68",
+            "size": 68
+        },
+        {
+            "name": "Transportation Policy: 68",
+            "size": 68
+        },
+        {
+            "name": "Classical Literature: 64",
+            "size": 64
+        },
+        {
+            "name": "Toxicology and Environmental Testing: 63",
+            "size": 63
+        },
+        {
+            "name": "African Exploration and Colonialism: 61",
+            "size": 61
+        },
+        {
+            "name": "European Integration: 61",
+            "size": 61
+        },
+        {
+            "name": "Russian Literature: 59",
+            "size": 59
+        },
+        {
+            "name": "Cathedrals and Churches: 58",
+            "size": 58
+        },
+        {
+            "name": "Agriculture: 58",
+            "size": 58
+        },
+        {
+            "name": "Libraries: 57",
+            "size": 57
+        },
+        {
+            "name": "Voltaire: 57",
+            "size": 57
+        },
+        {
+            "name": "Feminism and Women's Rights: 56",
+            "size": 56
+        },
+        {
+            "name": "World War I: 56",
+            "size": 56
+        },
+        {
+            "name": "Fables: 56",
+            "size": 56
+        },
+        {
+            "name": "Blaise Pascal: 56",
+            "size": 56
+        },
+        {
+            "name": "Satire: 54",
+            "size": 54
+        },
+        {
+            "name": "Stendhal: 54",
+            "size": 54
+        },
+        {
+            "name": "Algerian history: 54",
+            "size": 54
+        },
+        {
+            "name": "Russian History: 52",
+            "size": 52
+        },
+        {
+            "name": "French Literature: 51",
+            "size": 51
+        },
+        {
+            "name": "Academic Societies: 51",
+            "size": 51
+        },
+        {
+            "name": "Geology and Mineralogy: 49",
+            "size": 49
+        },
+        {
+            "name": "Victor Hugo: 45",
+            "size": 45
+        },
+        {
+            "name": "Urban Planning: 44",
+            "size": 44
+        },
+        {
+            "name": "European Travel: 43",
+            "size": 43
+        },
+        {
+            "name": "Natural History: 43",
+            "size": 43
+        },
+        {
+            "name": "Stenography: 42",
+            "size": 42
+        },
+        {
+            "name": "Belgium and Low Countries: 41",
+            "size": 41
+        },
+        {
+            "name": "Montaigne Studies: 41",
+            "size": 41
+        },
+        {
+            "name": "Astronomy: 41",
+            "size": 41
+        },
+        {
+            "name": "Linguistics: 40",
+            "size": 40
+        },
+        {
+            "name": "Moral Philosophy: 40",
+            "size": 40
+        },
+        {
+            "name": "George Sand: 40",
+            "size": 40
+        },
+        {
+            "name": "Eastern European History and Culture: 39",
+            "size": 39
+        },
+        {
+            "name": "Botany: 39",
+            "size": 39
+        },
+        {
+            "name": "Law and Justice: 39",
+            "size": 39
+        },
+        {
+            "name": "Renaissance: 39",
+            "size": 39
+        },
+        {
+            "name": "French-Canadian literature: 39",
+            "size": 39
+        },
+        {
+            "name": "Fran\u00e7ois Rabelais: 39",
+            "size": 39
+        },
+        {
+            "name": "Spanish Literature: 38",
+            "size": 38
+        },
+        {
+            "name": "Textual Documentation: 38",
+            "size": 38
+        },
+        {
+            "name": "Islam: 38",
+            "size": 38
+        },
+        {
+            "name": "Memoirs: 38",
+            "size": 38
+        },
+        {
+            "name": "Mary, Queen of Scots: 37",
+            "size": 37
+        },
+        {
+            "name": "Joan of Arc: 37",
+            "size": 37
+        },
+        {
+            "name": "Alexandre Dumas: 37",
+            "size": 37
+        },
+        {
+            "name": "Descartes: 37",
+            "size": 37
+        },
+        {
+            "name": "Freemasonry: 37",
+            "size": 37
+        },
+        {
+            "name": "Jean-Paul Sartre: 36",
+            "size": 36
+        },
+        {
+            "name": "Law and Legal Systems: 36",
+            "size": 36
+        },
+        {
+            "name": "Alphonse and L\u00e9on Daudet: 36",
+            "size": 36
+        },
+        {
+            "name": "Ancient Egypt: 35",
+            "size": 35
+        },
+        {
+            "name": "Psychoanalysis: 35",
+            "size": 35
+        },
+        {
+            "name": "World War I: 34",
+            "size": 34
+        },
+        {
+            "name": "Celtic Culture: 34",
+            "size": 34
+        },
+        {
+            "name": "Tales and Stories: 33",
+            "size": 33
+        },
+        {
+            "name": "Fascism and Holocaust: 33",
+            "size": 33
+        },
+        {
+            "name": "Italian Literature: 33",
+            "size": 33
+        },
+        {
+            "name": "Enlightenment: 33",
+            "size": 33
+        },
+        {
+            "name": "Greek Philosophy: 32",
+            "size": 32
+        },
+        {
+            "name": "Photography: 31",
+            "size": 31
+        },
+        {
+            "name": "Montesquieu: 31",
+            "size": 31
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(1, d.r / 6))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>

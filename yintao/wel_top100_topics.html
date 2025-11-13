@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welsh Topic Popularity</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load D3.js -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Define the font family for better aesthetics */
+        :root {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Basic styling for the SVG container */
+        #bubble-chart-container {
+            width: 100%;
+            height: 80vh; /* Use viewport height for a good size */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide overflow outside the SVG viewbox */
+        }
+
+        /* Styling for the bubbles */
+        .node circle {
+            cursor: pointer;
+            transition: fill 0.3s, transform 0.3s;
+            stroke: #fff;
+            stroke-width: 2px;
+        }
+
+        .node circle:hover {
+            opacity: 0.85;
+            /* Note: We remove the CSS scale on hover here because it might conflict with D3 zoom transform */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Header Card -->
+        <header class="text-center mb-8 p-6 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Welsh Topic Popularity</h1>
+            <p class="mt-2 text-gray-600">
+                A D3 Bubble Chart visualizing the relative size/frequency of major library topics.
+                Bubble size corresponds to the number of books in that category.
+            </p>
+            <p class="mt-4 text-sm font-semibold text-green-600">
+                Use your mouse wheel to **zoom** and click-and-drag to **pan** the chart!
+            </p>
+        </header>
+
+        <!-- Bubble Chart Container -->
+        <div class="bg-white p-4 sm:p-8 rounded-xl shadow-lg border border-gray-200">
+            <div id="bubble-chart-container">
+                <!-- D3 SVG will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Data Legend/Key -->
+        <div class="mt-8 p-4 bg-white rounded-xl shadow-md text-sm text-gray-700">
+            <h2 class="font-bold text-lg mb-2 text-indigo-600">Data Key</h2>
+            <p>The total "size" of the collection represented here is 2,740 units (e.g., books/documents). The topics are:</p>
+            <ul class="list-disc list-inside mt-2 grid grid-cols-2 sm:grid-cols-4 gap-x-4">
+                <li><span class="font-medium">Welsh Culture and Literature: 720:</span> 720</li>
+                <li><span class="font-medium">Welsh language and culture: 289:</span> 289</li>
+                <li><span class="font-medium">Welsh Religious Literature: 272:</span> 272</li>
+                <li><span class="font-medium">Welsh Poetry: 131:</span> 131</li>
+                <li><span class="font-medium">Welsh music and song: 130:</span> 130</li>
+                <li><span class="font-medium">Education in Wales: 88:</span> 88</li>
+                <li><span class="font-medium">Theatre and Drama: 74:</span> 74</li>
+                <li><span class="font-medium">Welsh children's literature: 69:</span> 69</li>
+                <li><span class="font-medium">Mathematics Education: 58:</span> 58</li>
+                <li><span class="font-medium">Welsh language and policy: 52:</span> 52</li>
+                <li><span class="font-medium">Economic and Industrial Development in Wales: 45:</span> 45</li>
+                <li><span class="font-medium">Welsh Culture and Eisteddfod: 45:</span> 45</li>
+                <li><span class="font-medium">Welsh History and Culture: 39:</span> 39</li>
+                <li><span class="font-medium">Health and Medicine: 28:</span> 28</li>
+                <li><span class="font-medium">Welsh History and Culture: 28:</span> 28</li>
+                <li><span class="font-medium">Welsh Art and Artists: 25:</span> 25</li>
+                <li><span class="font-medium">Elderly care and wellbeing: 22:</span> 22</li>
+                <li><span class="font-medium">Agricultural Policies in Wales: 22:</span> 22</li>
+                <li><span class="font-medium">Traffic and road safety: 22:</span> 22</li>
+                <li><span class="font-medium">Welsh Sports (Rugby and Soccer): 22:</span> 22</li>
+                <li><span class="font-medium">Children's Services and Welfare: 17:</span> 17</li>
+                <li><span class="font-medium">Welsh Food and Cooking: 17:</span> 17</li>
+                <li><span class="font-medium">Broadcasting and Media: 17:</span> 17</li>
+                <li><span class="font-medium">Geography Education: 17:</span> 17</li>
+                <li><span class="font-medium">Christmas and Santa Claus: 16:</span> 16</li>
+                <li><span class="font-medium">Science Education: 15:</span> 15</li>
+                <li><span class="font-medium">Nature and Plants: 15:</span> 15</li>
+                <li><span class="font-medium">Welsh Churches and Chapels: 12:</span> 12</li>
+                <li><span class="font-medium">Housing policy and management: 12:</span> 12</li>
+                <li><span class="font-medium">Detective Mysteries: 11:</span> 11</li>
+                <li><span class="font-medium">Sports and Recreation: 11:</span> 11</li>
+                <li><span class="font-medium">Welsh language dictionaries: 11:</span> 11</li>
+                <li><span class="font-medium">School Management and Organization: 10:</span> 10</li>
+                <li><span class="font-medium">Birds: 10:</span> 10</li>
+                <li><span class="font-medium">Environmental protection: 10:</span> 10</li>
+                <li><span class="font-medium">Charity and Philanthropy: 10:</span> 10</li>
+                <li><span class="font-medium">Welsh National Parks: 10:</span> 10</li>
+                <li><span class="font-medium">Urban and Regional Planning: 8:</span> 8</li>
+                <li><span class="font-medium">Walking in Snowdonia: 8:</span> 8</li>
+                <li><span class="font-medium">Computers and Electronics: 8:</span> 8</li>
+                <li><span class="font-medium">Arts and Government Support in Wales: 8:</span> 8</li>
+                <li><span class="font-medium">Career Development and Vocational Education: 8:</span> 8</li>
+                <li><span class="font-medium">Electoral arrangements: 8:</span> 8</li>
+                <li><span class="font-medium">Dogs: 8:</span> 8</li>
+                <li><span class="font-medium">Farming and rural life: 8:</span> 8</li>
+                <li><span class="font-medium">Disability and Special Education: 8:</span> 8</li>
+                <li><span class="font-medium">Friendship in Children: 7:</span> 7</li>
+                <li><span class="font-medium">Seafaring and Maritime Life: 7:</span> 7</li>
+                <li><span class="font-medium">Welsh Nationalism: 7:</span> 7</li>
+                <li><span class="font-medium">Social work and services in the UK: 7:</span> 7</li>
+                <li><span class="font-medium">Environmental Management: 7:</span> 7</li>
+                <li><span class="font-medium">Railways and Trains: 7:</span> 7</li>
+                <li><span class="font-medium">Welsh Museums: 7:</span> 7</li>
+                <li><span class="font-medium">Welsh Politicians: 6:</span> 6</li>
+                <li><span class="font-medium">Healthcare and Medicine: 6:</span> 6</li>
+                <li><span class="font-medium">Design and Technology in Education: 6:</span> 6</li>
+                <li><span class="font-medium">Counting and Numerals: 6:</span> 6</li>
+                <li><span class="font-medium">Coloring Books: 6:</span> 6</li>
+                <li><span class="font-medium">Amphibians and Reptiles in Children's Stories: 6:</span> 6</li>
+                <li><span class="font-medium">Mathematics: 6:</span> 6</li>
+                <li><span class="font-medium">Animals: 6:</span> 6</li>
+                <li><span class="font-medium">World War II: 6:</span> 6</li>
+                <li><span class="font-medium">Human settlements: 6:</span> 6</li>
+                <li><span class="font-medium">Welsh wit and humor: 5:</span> 5</li>
+                <li><span class="font-medium">Dinosaurs: 5:</span> 5</li>
+                <li><span class="font-medium">Police and crime: 5:</span> 5</li>
+                <li><span class="font-medium">Snow and Winter Stories: 5:</span> 5</li>
+                <li><span class="font-medium">Telecommunications: 5:</span> 5</li>
+                <li><span class="font-medium">Biology Studies: 5:</span> 5</li>
+                <li><span class="font-medium">World War I: 5:</span> 5</li>
+                <li><span class="font-medium">Statistical Mathematics: 5:</span> 5</li>
+                <li><span class="font-medium">Atlases and Geography: 5:</span> 5</li>
+                <li><span class="font-medium">Horses and Ponies: 5:</span> 5</li>
+                <li><span class="font-medium">Butterflies and Dragonflies: 5:</span> 5</li>
+                <li><span class="font-medium">Actors and Actresses: 5:</span> 5</li>
+                <li><span class="font-medium">Nature and Human Nature: 4:</span> 4</li>
+                <li><span class="font-medium">Food Safety: 4:</span> 4</li>
+                <li><span class="font-medium">Police Guidance and Regulation: 4:</span> 4</li>
+                <li><span class="font-medium">Farm Animals: 4:</span> 4</li>
+                <li><span class="font-medium">Substance Abuse: 4:</span> 4</li>
+                <li><span class="font-medium">Exploration and Missionary Work in Africa: 4:</span> 4</li>
+                <li><span class="font-medium">Bullying in Children's Stories: 4:</span> 4</li>
+                <li><span class="font-medium">Children's stories about horses: 4:</span> 4</li>
+                <li><span class="font-medium">Welsh Politics: 4:</span> 4</li>
+                <li><span class="font-medium">Home Economics and Life Skills: 4:</span> 4</li>
+                <li><span class="font-medium">Equality and Diversity: 4:</span> 4</li>
+                <li><span class="font-medium">Industrial Mining and Quarrying: 4:</span> 4</li>
+                <li><span class="font-medium">Volunteering in Wales: 4:</span> 4</li>
+                <li><span class="font-medium">Pensions and Public Welfare: 4:</span> 4</li>
+                <li><span class="font-medium">Welsh Church Registers: 4:</span> 4</li>
+                <li><span class="font-medium">Celtic Culture: 4:</span> 4</li>
+                <li><span class="font-medium">Tractors in Welsh Literature: 4:</span> 4</li>
+                <li><span class="font-medium">Welsh Culture and Heritage: 4:</span> 4</li>
+                <li><span class="font-medium">Technology and Design: 4:</span> 4</li>
+                <li><span class="font-medium">Motor vehicles: 4:</span> 4</li>
+                <li><span class="font-medium">Fairy tales: 4:</span> 4</li>
+                <li><span class="font-medium">French and Welsh Languages: 4:</span> 4</li>
+                <li><span class="font-medium">Tintin Adventures: 3:</span> 3</li>
+                <li><span class="font-medium">Rural Tourism Management: 3:</span> 3</li>
+                <li><span class="font-medium">Amusement Activities: 3:</span> 3</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Global variable to hold the initialized D3 chart group
+        let chartGroup; 
+
+        // Use a function to ensure D3 logic runs only after the DOM is fully loaded.
+        function createBubbleChart() {
+            // --- 1. Dynamic Data (Injected by Python) ---
+const data = {
+    "name": "Library Collection",
+    "children": [
+        {
+            "name": "Welsh Culture and Literature: 720",
+            "size": 720
+        },
+        {
+            "name": "Welsh language and culture: 289",
+            "size": 289
+        },
+        {
+            "name": "Welsh Religious Literature: 272",
+            "size": 272
+        },
+        {
+            "name": "Welsh Poetry: 131",
+            "size": 131
+        },
+        {
+            "name": "Welsh music and song: 130",
+            "size": 130
+        },
+        {
+            "name": "Education in Wales: 88",
+            "size": 88
+        },
+        {
+            "name": "Theatre and Drama: 74",
+            "size": 74
+        },
+        {
+            "name": "Welsh children's literature: 69",
+            "size": 69
+        },
+        {
+            "name": "Mathematics Education: 58",
+            "size": 58
+        },
+        {
+            "name": "Welsh language and policy: 52",
+            "size": 52
+        },
+        {
+            "name": "Economic and Industrial Development in Wales: 45",
+            "size": 45
+        },
+        {
+            "name": "Welsh Culture and Eisteddfod: 45",
+            "size": 45
+        },
+        {
+            "name": "Welsh History and Culture: 39",
+            "size": 39
+        },
+        {
+            "name": "Health and Medicine: 28",
+            "size": 28
+        },
+        {
+            "name": "Welsh History and Culture: 28",
+            "size": 28
+        },
+        {
+            "name": "Welsh Art and Artists: 25",
+            "size": 25
+        },
+        {
+            "name": "Elderly care and wellbeing: 22",
+            "size": 22
+        },
+        {
+            "name": "Agricultural Policies in Wales: 22",
+            "size": 22
+        },
+        {
+            "name": "Traffic and road safety: 22",
+            "size": 22
+        },
+        {
+            "name": "Welsh Sports (Rugby and Soccer): 22",
+            "size": 22
+        },
+        {
+            "name": "Children's Services and Welfare: 17",
+            "size": 17
+        },
+        {
+            "name": "Welsh Food and Cooking: 17",
+            "size": 17
+        },
+        {
+            "name": "Broadcasting and Media: 17",
+            "size": 17
+        },
+        {
+            "name": "Geography Education: 17",
+            "size": 17
+        },
+        {
+            "name": "Christmas and Santa Claus: 16",
+            "size": 16
+        },
+        {
+            "name": "Science Education: 15",
+            "size": 15
+        },
+        {
+            "name": "Nature and Plants: 15",
+            "size": 15
+        },
+        {
+            "name": "Welsh Churches and Chapels: 12",
+            "size": 12
+        },
+        {
+            "name": "Housing policy and management: 12",
+            "size": 12
+        },
+        {
+            "name": "Detective Mysteries: 11",
+            "size": 11
+        },
+        {
+            "name": "Sports and Recreation: 11",
+            "size": 11
+        },
+        {
+            "name": "Welsh language dictionaries: 11",
+            "size": 11
+        },
+        {
+            "name": "School Management and Organization: 10",
+            "size": 10
+        },
+        {
+            "name": "Birds: 10",
+            "size": 10
+        },
+        {
+            "name": "Environmental protection: 10",
+            "size": 10
+        },
+        {
+            "name": "Charity and Philanthropy: 10",
+            "size": 10
+        },
+        {
+            "name": "Welsh National Parks: 10",
+            "size": 10
+        },
+        {
+            "name": "Urban and Regional Planning: 8",
+            "size": 8
+        },
+        {
+            "name": "Walking in Snowdonia: 8",
+            "size": 8
+        },
+        {
+            "name": "Computers and Electronics: 8",
+            "size": 8
+        },
+        {
+            "name": "Arts and Government Support in Wales: 8",
+            "size": 8
+        },
+        {
+            "name": "Career Development and Vocational Education: 8",
+            "size": 8
+        },
+        {
+            "name": "Electoral arrangements: 8",
+            "size": 8
+        },
+        {
+            "name": "Dogs: 8",
+            "size": 8
+        },
+        {
+            "name": "Farming and rural life: 8",
+            "size": 8
+        },
+        {
+            "name": "Disability and Special Education: 8",
+            "size": 8
+        },
+        {
+            "name": "Friendship in Children: 7",
+            "size": 7
+        },
+        {
+            "name": "Seafaring and Maritime Life: 7",
+            "size": 7
+        },
+        {
+            "name": "Welsh Nationalism: 7",
+            "size": 7
+        },
+        {
+            "name": "Social work and services in the UK: 7",
+            "size": 7
+        },
+        {
+            "name": "Environmental Management: 7",
+            "size": 7
+        },
+        {
+            "name": "Railways and Trains: 7",
+            "size": 7
+        },
+        {
+            "name": "Welsh Museums: 7",
+            "size": 7
+        },
+        {
+            "name": "Welsh Politicians: 6",
+            "size": 6
+        },
+        {
+            "name": "Healthcare and Medicine: 6",
+            "size": 6
+        },
+        {
+            "name": "Design and Technology in Education: 6",
+            "size": 6
+        },
+        {
+            "name": "Counting and Numerals: 6",
+            "size": 6
+        },
+        {
+            "name": "Coloring Books: 6",
+            "size": 6
+        },
+        {
+            "name": "Amphibians and Reptiles in Children's Stories: 6",
+            "size": 6
+        },
+        {
+            "name": "Mathematics: 6",
+            "size": 6
+        },
+        {
+            "name": "Animals: 6",
+            "size": 6
+        },
+        {
+            "name": "World War II: 6",
+            "size": 6
+        },
+        {
+            "name": "Human settlements: 6",
+            "size": 6
+        },
+        {
+            "name": "Welsh wit and humor: 5",
+            "size": 5
+        },
+        {
+            "name": "Dinosaurs: 5",
+            "size": 5
+        },
+        {
+            "name": "Police and crime: 5",
+            "size": 5
+        },
+        {
+            "name": "Snow and Winter Stories: 5",
+            "size": 5
+        },
+        {
+            "name": "Telecommunications: 5",
+            "size": 5
+        },
+        {
+            "name": "Biology Studies: 5",
+            "size": 5
+        },
+        {
+            "name": "World War I: 5",
+            "size": 5
+        },
+        {
+            "name": "Statistical Mathematics: 5",
+            "size": 5
+        },
+        {
+            "name": "Atlases and Geography: 5",
+            "size": 5
+        },
+        {
+            "name": "Horses and Ponies: 5",
+            "size": 5
+        },
+        {
+            "name": "Butterflies and Dragonflies: 5",
+            "size": 5
+        },
+        {
+            "name": "Actors and Actresses: 5",
+            "size": 5
+        },
+        {
+            "name": "Nature and Human Nature: 4",
+            "size": 4
+        },
+        {
+            "name": "Food Safety: 4",
+            "size": 4
+        },
+        {
+            "name": "Police Guidance and Regulation: 4",
+            "size": 4
+        },
+        {
+            "name": "Farm Animals: 4",
+            "size": 4
+        },
+        {
+            "name": "Substance Abuse: 4",
+            "size": 4
+        },
+        {
+            "name": "Exploration and Missionary Work in Africa: 4",
+            "size": 4
+        },
+        {
+            "name": "Bullying in Children's Stories: 4",
+            "size": 4
+        },
+        {
+            "name": "Children's stories about horses: 4",
+            "size": 4
+        },
+        {
+            "name": "Welsh Politics: 4",
+            "size": 4
+        },
+        {
+            "name": "Home Economics and Life Skills: 4",
+            "size": 4
+        },
+        {
+            "name": "Equality and Diversity: 4",
+            "size": 4
+        },
+        {
+            "name": "Industrial Mining and Quarrying: 4",
+            "size": 4
+        },
+        {
+            "name": "Volunteering in Wales: 4",
+            "size": 4
+        },
+        {
+            "name": "Pensions and Public Welfare: 4",
+            "size": 4
+        },
+        {
+            "name": "Welsh Church Registers: 4",
+            "size": 4
+        },
+        {
+            "name": "Celtic Culture: 4",
+            "size": 4
+        },
+        {
+            "name": "Tractors in Welsh Literature: 4",
+            "size": 4
+        },
+        {
+            "name": "Welsh Culture and Heritage: 4",
+            "size": 4
+        },
+        {
+            "name": "Technology and Design: 4",
+            "size": 4
+        },
+        {
+            "name": "Motor vehicles: 4",
+            "size": 4
+        },
+        {
+            "name": "Fairy tales: 4",
+            "size": 4
+        },
+        {
+            "name": "French and Welsh Languages: 4",
+            "size": 4
+        },
+        {
+            "name": "Tintin Adventures: 3",
+            "size": 3
+        },
+        {
+            "name": "Rural Tourism Management: 3",
+            "size": 3
+        },
+        {
+            "name": "Amusement Activities: 3",
+            "size": 3
+        }
+    ]
+};
+
+            // --- 2. Chart Setup and Responsiveness ---
+            const container = document.getElementById('bubble-chart-container');
+            let width = container.clientWidth;
+            let height = container.clientHeight;
+
+            // Initialize or clear the SVG
+            d3.select("#bubble-chart-container svg").remove();
+
+            const svg = d3.select("#bubble-chart-container")
+                .append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`)
+                .attr("preserveAspectRatio", "xMinYMin meet")
+                .style("display", "block");
+
+            // NEW: Append a group element that will hold the zoomable chart content
+            // All bubbles and text will be appended to this group.
+            chartGroup = svg.append("g"); 
+
+            // Define the pack layout function
+            const pack = d3.pack()
+                .size([width, height])
+                .padding(2);
+
+            // --- 3. Data Processing ---
+            const root = d3.hierarchy(data)
+                .sum(d => d.size) // Use the 'size' property to determine bubble area
+                .sort((a, b) => b.value - a.value); // Sort larger bubbles first
+
+            // Apply the layout to the root node to calculate positions (x, y) and radius (r)
+            const nodes = pack(root).descendants();
+
+            // --- 4. Color Scale ---
+            // Define a color scale to differentiate topics
+            const color = d3.scaleOrdinal(d3.schemeCategory10);
+
+            // Define the group (node) elements for the bubbles and text, appending to chartGroup
+            const node = chartGroup.selectAll(".node")
+                .data(nodes.filter(d => d.depth === 1)) // Filter to only include the main topics (depth 1)
+                .enter().append("g")
+                .attr("class", "node")
+                .attr("transform", d => `translate(${d.x},${d.y})`);
+
+            // --- 5. Draw Bubbles (Circles) ---
+            node.append("circle")
+                .attr("r", d => d.r) // Use the radius calculated by d3.pack
+                .attr("fill", (d, i) => color(i))
+                .attr("opacity", 0.9)
+                .append("title") // Add tooltips for accessibility
+                .text(d => `${d.data.name}: ${d.data.size} units`);
+
+            // --- 6. Draw Labels (Text) ---
+            // We use <foreignObject> to embed HTML <divs> which allows for text wrapping.
+            const foreignObject = node.append("foreignObject")
+                .attr("width", d => d.r * 2) // Set width to bubble diameter
+                .attr("height", d => d.r * 2) // Set height to bubble diameter
+                .attr("x", d => -d.r) // Center horizontally (offset by radius)
+                .attr("y", d => -d.r) // Center vertically (offset by radius)
+                .style("pointer-events", "none"); // Text should not interfere with mouse events
+
+            // Add the HTML div for text content
+            foreignObject.append("xhtml:div")
+                .style("width", "100%")
+                .style("height", "100%")
+                .style("display", "flex")
+                .style("align-items", "center")
+                .style("justify-content", "center")
+                .style("text-align", "center")
+                .style("font-weight", "600")
+                .style("color", "white")
+                .style("text-shadow", "0 1px 1px rgba(0, 0, 0, 0.3)")
+                // Scale font size. We use d.r / 4 to be a bit smaller to allow for wrapping.
+                .style("font-size", d => `${Math.min(24, Math.max(8, d.r / 4))}px`)
+                // Allow long words to break and wrap
+                .style("word-break", "break-word")
+                .style("overflow-wrap", "break-word")
+                .html(d => d.data.name); // Set the text content
+
+            // --- 7. Zoom Functionality ---
+
+            // Handler function for the zoom event
+            function zoomed(event) {
+                // Apply the new transform (k, x, y) to the chart group
+                chartGroup.attr("transform", event.transform);
+            }
+
+            // Create the zoom behavior
+            const zoom = d3.zoom()
+                .scaleExtent([0.5, 8]) // Allow scaling between 50% and 800%
+                .on("zoom", zoomed); // Attach the zoom handler
+
+            // Apply the zoom behavior to the main SVG element
+            svg.call(zoom);
+
+
+            // --- 8. Responsive handling for resizing (container changes) ---
+            function handleResize() {
+                // Recalculate container dimensions
+                width = container.clientWidth;
+                height = container.clientHeight;
+
+                // Update SVG viewbox and pack layout size
+                svg.attr("viewBox", `0 0 ${width} ${height}`);
+                pack.size([width, height]);
+
+                // Recalculate layout and update positions/radii
+                const newRoot = pack(root);
+
+                // --- UPDATED LOGIC ---
+                // Store the selection of nodes and bind the new data
+                const updatedNodes = chartGroup.selectAll(".node")
+                    .data(newRoot.descendants().filter(d => d.depth === 1));
+
+                // Update positions of the <g> node group
+                updatedNodes.attr("transform", d => `translate(${d.x},${d.y})`);
+
+                // Use the updated selection to update the child <circle>
+                updatedNodes.select("circle")
+                    .attr("r", d => d.r);
+
+                // Use the updated selection to update the child <foreignObject>
+                const updatedForeignObject = updatedNodes.select("foreignObject")
+                    .attr("width", d => d.r * 2)
+                    .attr("height", d => d.r * 2)
+                    .attr("x", d => -d.r)
+                    .attr("y", d => -d.r);
+
+                // And update the div inside it
+                updatedForeignObject.select("div")
+                    .style("font-size", d => `${Math.min(24, Math.max(1, d.r / 6))}px`)
+                    .html(d => d.data.name); // Re-apply text in case it was lost
+            }
+
+            // Debounce the resize event to prevent performance issues
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(handleResize, 150);
+            });
+
+            // Call resize once on load to ensure initial fit
+            handleResize();
+        }
+
+        // Run the chart function when the window loads
+        window.onload = createBubbleChart;
+    </script>
+</body>
+</html>
