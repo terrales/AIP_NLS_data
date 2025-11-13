@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Bubble Chart</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 4px;
+            pointer-events: none;
+            font-size: 14px;
+            display: none;
+            z-index: 1000;
+        }
+        .counter {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+    </style>
+</head>
+<body>
+    <div class="counter" id="counter"></div>
+    <div class="tooltip" id="tooltip"></div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script>
+        fetch('./data_stats.json')
+            .then(response => response.json())
+            .then(json => {
+                const valueCounts = json.language.value_counts;
+                const data = Object.entries(valueCounts).map(([language, frequency]) => ({
+                    language,
+                    frequency
+                }));
+
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+
+                // Scale for bubble sizes
+                const radiusScale = d3.scaleSqrt()
+                    .domain([d3.min(data, d => d.frequency), d3.max(data, d => d.frequency)])
+                    .range([5, Math.min(width, height) * 0.15]);
+
+                // Prepare nodes for force simulation
+                const nodes = data.map(d => ({
+                    language: d.language,
+                    frequency: d.frequency,
+                    radius: radiusScale(d.frequency),
+                    x: width / 2 + (Math.random() - 0.5) * width * 0.5,
+                    y: height / 2 + (Math.random() - 0.5) * height * 0.5
+                }));
+
+                // Display the count of languages
+                d3.select("#counter").text(`Total Languages: ${nodes.length}`);
+
+                // Create SVG
+                d3.select("body").selectAll("svg").remove();
+                const svg = d3.select("body")
+                    .append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .style("display", "block")
+                    .style("position", "fixed")
+                    .style("top", 0)
+                    .style("left", 0);
+
+                const g = svg.append("g");
+
+                // Color scale
+                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+
+                // Create circles
+                const circles = g.selectAll("circle")
+                    .data(nodes)
+                    .enter()
+                    .append("circle")
+                    .attr("r", d => d.radius)
+                    .attr("fill", (d, i) => colorScale(i))
+                    .attr("stroke", "#333")
+                    .attr("stroke-width", 2)
+                    .style("cursor", "pointer");
+
+                // Create labels
+                const labels = g.selectAll("text")
+                    .data(nodes)
+                    .enter()
+                    .append("text")
+                    .attr("text-anchor", "middle")
+                    .attr("dy", ".35em")
+                    .style("pointer-events", "none")
+                    .style("font-weight", "bold")
+                    .style("fill", "#fff")
+                    .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
+                    .text(d => d.language);
+
+                // Tooltip
+                const tooltip = d3.select("#tooltip");
+
+                circles
+                    .on("mouseenter", (event, d) => {
+                        tooltip
+                            .style("display", "block")
+                            .html(`<strong>${d.language}</strong><br/>Frequency: ${d.frequency.toLocaleString()}<br/><em>Click to view details</em>`);
+                    })
+                    .on("mousemove", (event) => {
+                        tooltip
+                            .style("left", (event.pageX + 10) + "px")
+                            .style("top", (event.pageY + 10) + "px");
+                    })
+                    .on("mouseleave", () => {
+                        tooltip.style("display", "none");
+                    })
+                    .on("click", (event, d) => {
+                        // Encode the language name for URL
+                        const encodedLanguage = encodeURIComponent(d.language);
+                        // Navigate to the language-specific page
+                        // Adjust the path as needed for your project structure
+                        window.location.href = `./language_over_time.html?language=${encodedLanguage}`;
+                    });
+
+                // Force simulation for non-overlapping bubbles
+                const simulation = d3.forceSimulation(nodes)
+                    .force("charge", d3.forceManyBody().strength(5))
+                    .force("collide", d3.forceCollide().radius(d => d.radius + 5).iterations(2))
+                    .force("center", d3.forceCenter(width / 2, height / 2))
+                    .force("x", d3.forceX(width / 2).strength(0.05))
+                    .force("y", d3.forceY(height / 2).strength(0.05))
+                    .on("tick", ticked);
+
+                // Run simulation to completion immediately
+                simulation.tick(300);
+                simulation.stop();
+
+                function ticked() {
+                    circles
+                        .attr("cx", d => d.x)
+                        .attr("cy", d => d.y);
+
+                    labels
+                        .attr("x", d => d.x)
+                        .attr("y", d => d.y);
+
+                    updateLabelVisibility(1);
+                }
+                
+                // Initial render
+                ticked();
+
+                // Function to update label visibility based on zoom and size
+                function updateLabelVisibility(scale) {
+                    labels.style("display", d => {
+                        const scaledRadius = d.radius * scale;
+                        // Show label if scaled radius is large enough
+                        return scaledRadius > 25 ? "block" : "none";
+                    })
+                    .style("font-size", d => {
+                        const scaledRadius = d.radius * scale;
+                        return Math.max(10, Math.min(scaledRadius * 0.35, 40)) + "px";
+                    });
+                }
+
+                // Zoom behavior
+                const zoom = d3.zoom()
+                    .scaleExtent([0.3, 8])
+                    .on("zoom", (event) => {
+                        g.attr("transform", event.transform);
+                        updateLabelVisibility(event.transform.k);
+                    });
+
+                svg.call(zoom);
+
+                // Initial label visibility
+                updateLabelVisibility(1);
+            })
+            .catch(error => {
+                console.error('Error loading or parsing data_stats.json:', error);
+                document.body.innerHTML = '<div style="padding: 20px; color: red;">Error loading data. Please check the console.</div>';
+            });
+    </script>
+</body>
+</html>
