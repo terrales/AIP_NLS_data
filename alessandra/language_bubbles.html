@@ -10,10 +10,37 @@
             padding: 0;
             overflow: hidden;
             font-family: Arial, sans-serif;
+            display: flex;
+        }
+        .chart-container {
+            flex: 1;
+            position: relative;
+        }
+        .sidebar {
+            width: 300px;
+            background: none;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: none;
+            height: 100vh;
+        }
+        .language-item {
+            cursor: pointer;
+            padding: 8px 12px;
+            margin: 6px 0;
+            border-radius: 6px;
+            transition: all 0.2s;
+            font-weight: 600;
+            text-align: center;
+            background: transparent;
+        }
+        .language-item:hover {
+            background: rgba(170, 135, 251, 0.587);
+            transform: translateX(-5px);
         }
         .tooltip {
             position: absolute;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(170, 135, 251, 0.587);
             color: white;
             padding: 8px 12px;
             border-radius: 4px;
@@ -21,36 +48,46 @@
             font-size: 14px;
             display: none;
             z-index: 1000;
+            border: 1px solid #7c75e0;
         }
         .counter {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(170, 135, 251, 0.587);
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
             font-size: 16px;
             font-weight: bold;
             z-index: 1000;
+            border: 2px solid #7c75e0;
         }
     </style>
 </head>
 <body>
-    <div class="counter" id="counter"></div>
-    <div class="tooltip" id="tooltip"></div>
+    <div class="chart-container">
+        <div class="counter" id="counter"></div>
+        <div class="tooltip" id="tooltip"></div>
+    </div>
+    <div class="sidebar">
+        <div id="language-list"></div>
+    </div>
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         fetch('./data_stats.json')
             .then(response => response.json())
             .then(json => {
                 const valueCounts = json.language.value_counts;
-                const data = Object.entries(valueCounts).map(([language, frequency]) => ({
-                    language,
-                    frequency
-                }));
+                // Filter languages to only include those with at least 3 characters
+                const data = Object.entries(valueCounts)
+                    .filter(([language, frequency]) => language.length >= 3 && language[0] === language[0].toUpperCase() && /^[A-Z]/.test(language[0]))
+                    .map(([language, frequency]) => ({
+                        language,
+                        frequency
+                    }));
 
-                const width = window.innerWidth;
+                const width = window.innerWidth - 300; // Subtract sidebar width
                 const height = window.innerHeight;
 
                 // Scale for bubble sizes
@@ -71,8 +108,8 @@
                 d3.select("#counter").text(`Total Languages: ${nodes.length}`);
 
                 // Create SVG
-                d3.select("body").selectAll("svg").remove();
-                const svg = d3.select("body")
+                d3.select(".chart-container").selectAll("svg").remove();
+                const svg = d3.select(".chart-container")
                     .append("svg")
                     .attr("width", width)
                     .attr("height", height)
@@ -83,19 +120,42 @@
 
                 const g = svg.append("g");
 
-                // Color scale
-                const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+                const palette = [
+                    "#14143b",
+                    "#302e67",
+                    "#3e3b7f",
+                    "#4e4a97",
+                    "#5d58b0",
+                    "#6e67ca",
+                    "#7e77e4",
+                    "#8f87ff"
+                ];
+                const maxFreq = d3.max(data, d => d.frequency);
+                const minFreq = d3.min(data, d => d.frequency);
+                // Strict rank-based color mapping: darkest for largest, lightest for smallest
+                const sorted = [...data].sort((a, b) => b.frequency - a.frequency);
+                const colorByLanguage = {};
+                if (sorted.length > 0) {
+                    colorByLanguage[sorted[0].language] = palette[0]; // Largest gets darkest
+                    const restPalette = palette.slice(1);
+                    const restCount = sorted.length - 1;
+                    for (let i = 1; i < sorted.length; i++) {
+                        // Distribute only among lighter colors, never assign palette[0] again
+                        const idx = restCount > 1 ? Math.floor((i - 1) * restPalette.length / restCount) : 0;
+                        colorByLanguage[sorted[i].language] = restPalette[idx] || restPalette[restPalette.length - 1];
+                    }
+                }
 
-                // Create circles
                 const circles = g.selectAll("circle")
                     .data(nodes)
                     .enter()
                     .append("circle")
                     .attr("r", d => d.radius)
-                    .attr("fill", (d, i) => colorScale(i))
-                    .attr("stroke", "#333")
-                    .attr("stroke-width", 2)
+                    .attr("fill", d => colorByLanguage[d.language])
+                    .attr("stroke", "none")
+                    .attr("stroke-width", 0)
                     .style("cursor", "pointer");
+
 
                 // Create labels
                 const labels = g.selectAll("text")
@@ -106,7 +166,12 @@
                     .attr("dy", ".35em")
                     .style("pointer-events", "none")
                     .style("font-weight", "bold")
-                    .style("fill", "#fff")
+                    .style("fill", d => {
+                        const color = d3.color(colorByLanguage[d.language]);
+                        if (!color) return '#fff';
+                        const brightness = (color.r * 299 + color.g * 587 + color.b * 114) / 1000;
+                        return brightness > 140 ? '#14143b' : '#fff';
+                    })
                     .style("text-shadow", "1px 1px 2px rgba(0,0,0,0.8)")
                     .text(d => d.language);
 
@@ -188,6 +253,26 @@
 
                 // Initial label visibility
                 updateLabelVisibility(1);
+
+                // Create sidebar language list - alphabetically sorted
+                const sortedData = [...data].sort((a, b) => a.language.localeCompare(b.language));
+                const fontScale = d3.scaleLog()
+                    .domain([minFreq, maxFreq])
+                    .range([15, 45]);
+
+                const languageList = d3.select("#language-list");
+                
+                sortedData.forEach(d => {
+                    const item = languageList.append("div")
+                        .attr("class", "language-item")
+                        .style("font-size", fontScale(d.frequency) + "px")
+                        .style("color", colorByLanguage[d.language])
+                        .text(d.language)
+                        .on("click", () => {
+                            const encodedLanguage = encodeURIComponent(d.language);
+                            window.location.href = `./language_over_time.html?language=${encodedLanguage}`;
+                        });
+                });
             })
             .catch(error => {
                 console.error('Error loading or parsing data_stats.json:', error);

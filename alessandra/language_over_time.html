@@ -1,290 +1,851 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Language Details</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, sans-serif;
-            background: #f5f5f5;
-        }
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        .back-button {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #007bff;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
-        }
-        .back-button:hover {
-            background: #0056b3;
-        }
-        #chart {
-            width: 100%;
-            height: 600px;
-        }
-        .legend {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f9f9f9;
-            border-radius: 4px;
-        }
-        .legend-item {
-            display: inline-block;
-            margin-right: 20px;
-            margin-bottom: 10px;
-        }
-        .legend-line {
-            display: inline-block;
-            width: 30px;
-            height: 3px;
-            margin-right: 8px;
-            vertical-align: middle;
-        }
-        .legend-line.bold {
-            height: 4px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Language Details</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #ffffff;
+    }
+    .container {
+      width: 100vw;
+      max-width: none;
+      margin: 0;
+      background: none;
+      padding: 0;
+      border-radius: 0;
+      box-shadow: none;
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+    .back-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #007bff;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      margin-bottom: 20px;
+      cursor: pointer;
+      border: none;
+      font-size: 14px;
+    }
+    .back-button:hover {
+      background: #0056b3;
+    }
+    #chart {
+      width: 75%;
+      max-width: 650px;
+      height: 480px;
+      position: relative;
+      margin: 0 0 40px 0;
+      display: block;
+    }
+    .treemap-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      margin-top: 18px;
+      display: block;
+    }
+    .sunburst-title {
+      font-weight: bold;
+      margin-bottom: 8px;
+      margin-top: 18px;
+      display: block;
+    }
+    .brush-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+    }
+    .selection-info {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e8f4f8;
+      border-radius: 4px;
+      border-left: 4px solid #007bff;
+    }
+    .selection-info h3 {
+      margin-top: 0;
+      color: #007bff;
+    }
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .viz-container {
+      padding: 0;
+      margin-bottom: 32px;
+      background: none;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    .viz-container h4 {
+      margin-top: 0;
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 15px;
+    }
+    #treemap-viz, #sunburst-viz {
+      width: 100%;
+      height: 400px;
+    }
+    .stat-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .stat-item:last-child {
+      border-bottom: none;
+    }
+    .stat-label {
+      font-weight: 500;
+      color: #555;
+    }
+    .stat-value {
+      color: #007bff;
+      font-weight: bold;
+    }
+    .legend {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+    .legend-item {
+      display: inline-block;
+      margin-right: 20px;
+      margin-bottom: 10px;
+    }
+    .legend-line {
+      display: inline-block;
+      width: 30px;
+      height: 3px;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    .legend-line.bold {
+      height: 4px;
+    }
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    .instruction {
+      background: #fff9e6;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 15px;
+      border-left: 4px solid #ffc107;
+      font-size: 14px;
+    }
+    .reset-button {
+      padding: 8px 16px;
+      background: #6c757d;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+    .reset-button:hover {
+      background: #5a6268;
+    }
+    /* Treemap styles */
+    .treemap-cell {
+      stroke: #fff;
+      stroke-width: 2px;
+      cursor: pointer;
+    }
+    .treemap-text {
+      pointer-events: none;
+      fill: white;
+      font-size: 12px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    /* Sunburst styles */
+    .sunburst-arc {
+      cursor: pointer;
+      stroke: #fff;
+      stroke-width: 1px;
+    }
+    .sunburst-arc:hover {
+      opacity: 0.8;
+    }
+    .sunburst-text {
+      pointer-events: none;
+      fill: white;
+      font-size: 11px;
+      font-weight: 500;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+    .breadcrumb {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 10px;
+      min-height: 20px;
+    }
+    .breadcrumb-item {
+      color: #007bff;
+      cursor: pointer;
+    }
+    .breadcrumb-item:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-    <a class="back-button" href="./language_bubbles.html">← Back to Overview</a>
-        <h1 id="language-name">Language Popularity Over Time</h1>
-        <p class="subtitle">Showing publication frequency across all time periods</p>
-        <div id="chart"></div>
-        <div class="legend" id="legend"></div>
+  <div class="container">
+  <div style="flex: 0 0 60vw; max-width: 60vw; min-width: 0; padding: 20px 24px 20px 40px; box-sizing: border-box;">
+      <a class="back-button" href="./language_bubbles.html">← Back to Overview</a>
+      <h1 id="language-name">Language Popularity Over Time</h1>
+      <p class="subtitle">Showing publication frequency across all time periods</p>
+      <div class="instruction" id="interactive-banner">
+        📊 <strong>Interactive Chart:</strong> Click and drag on the chart to select a year range and see detailed statistics for that period.
+        <button class="reset-button" id="reset-button" style="display: none;">Clear Selection</button>
+      </div>
+  <div id="chart" style="width: 100%;">
+        <div class="loading">Loading data...</div>
+      </div>
+      <div class="legend" id="legend"></div>
     </div>
+  <div id="selection-info" style="display: none; min-width: 340px; max-width: 40vw; width: 40vw; margin-left: 0; padding: 20px 40px 20px 0; box-sizing: border-box;"></div>
+  </div>
 
-    <script src="https://d3js.org/d3.v7.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script>
-        // Get the selected language from URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const selectedLanguage = urlParams.get('language');
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedLanguage = urlParams.get('language');
+    let timeSeriesData = null;
+  
+    const palette = [
+      '#14143b',
+      '#3d2d5d',
+      '#694980',
+      '#9866a3',
+      '#ca85c6',
+      '#ffa5e7',
+      '#fc8fcc',
+      '#f679ae',
+      '#ee6490',
+      '#e35071',
+      '#d43d51'
+    ];
+    let colorByLanguage = {};
 
-        // Update page title
-        if (selectedLanguage) {
-            document.getElementById('language-name').textContent = `${selectedLanguage} - Popularity Over Time`;
+    if (selectedLanguage) {
+      document.getElementById('language-name').textContent =
+        `${selectedLanguage} - Popularity Over Time`;
+    }
+
+    Promise.all([
+      fetch('./language_timeseries_detailed.json').then(r => {
+        if (!r.ok) throw new Error('Failed to load data');
+        return r.json();
+      }),
+      fetch('./historical_events.json').then(r => {
+        if (!r.ok) throw new Error('Failed to load events');
+        return r.json();
+      }).catch(() => [])
+    ]).then(([data, events]) => {
+      timeSeriesData = data;
+      document.getElementById('chart').innerHTML = '';
+
+      if (!data.series || data.series.length === 0) {
+        document.getElementById('chart').innerHTML =
+          '<p style="color: orange; padding: 20px;">No time-series data available.</p>';
+        return;
+      }
+
+      const langTotals = data.series.map(d => ({
+        language: d.language,
+        total: d3.sum(d.values, v => v.count)
+      }));
+      const sortedLangs = langTotals.sort((a, b) => b.total - a.total);
+      colorByLanguage = {};
+      if (sortedLangs.length > 0) {
+        colorByLanguage[sortedLangs[0].language] = palette[0];
+        const restPalette = palette.slice(1);
+        const restCount = sortedLangs.length - 1;
+        for (let i = 1; i < sortedLangs.length; i++) {
+          const idx = restCount > 1 ? Math.floor((i - 1) * restPalette.length / restCount) : 0;
+          colorByLanguage[sortedLangs[i].language] = restPalette[idx] || restPalette[restPalette.length - 1];
         }
+      }
 
-        // Load the CSV data
-        Papa.parse('./data_cleaned.csv', {
-            download: true,
-            header: true,
-            dynamicTyping: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                const data = results.data;
-                
-                // Process the data to create time series
-                const timeSeriesData = processTimeSeriesData(data);
-                
-                if (timeSeriesData.series.length === 0) {
-                    document.getElementById('chart').innerHTML = 
-                        '<p style="color: orange; padding: 20px;">No time-series data available. Check date format in CSV.</p>';
-                    return;
-                }
-                
-                createLineChart(timeSeriesData, selectedLanguage);
-            },
-            error: function(error) {
-                console.error('Error loading CSV:', error);
-                document.getElementById('chart').innerHTML = 
-                    '<p style="color: red; padding: 20px;">Error loading data_cleaned.csv. Please check the file path.</p>';
-            }
+      createLineChart(data, selectedLanguage, events);
+      const years = data.years;
+      showYearRangeStats(d3.min(years), d3.max(years), selectedLanguage);
+      document.getElementById('selection-info').style.display = 'block';
+    }).catch(error => {
+      console.error(error);
+      document.getElementById('chart').innerHTML =
+        '<p style="color: red; padding: 20px;">Error loading data.</p>';
+    });
+
+    function createLineChart(data, selectedLanguage, events) {
+      const chartDiv = document.getElementById('chart');
+      // Use 60vw for the line plot width
+      const chartWidth = Math.floor(window.innerWidth * 0.55);
+      const margin = {top: 20, right: 120, bottom: 80, left: 60}; // more bottom margin
+      const width = chartWidth - margin.left - margin.right;
+      const height = 480 - margin.top - margin.bottom;
+
+      const svg = d3.select("#chart")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleLinear()
+        .domain(d3.extent(data.years))
+        .range([0, width]);
+
+      const selectedSeries = data.series.find(d => d.language === selectedLanguage);
+      const selectedMax = selectedSeries ? d3.max(selectedSeries.values, v => v.count) : 1;
+      let similarSeries = data.series
+        .filter(d => d.language !== selectedLanguage)
+        .map(d => ({
+          ...d,
+          max: d3.max(d.values, v => v.count),
+          diff: Math.abs((d3.max(d.values, v => v.count) || 1) - selectedMax)
+        }))
+        .sort((a, b) => a.diff - b.diff);
+      let filtered = similarSeries.filter(d => d.max >= selectedMax / 10 && d.max <= selectedMax * 10);
+      if (filtered.length < 5) {
+        filtered = similarSeries.slice(0, Math.max(5, Math.min(10, similarSeries.length)));
+      } else {
+        filtered = filtered.slice(0, 10);
+      }
+      similarSeries = filtered.map(({max, diff, ...rest}) => rest);
+      const bgPalette = palette.slice(1);
+      const bgColorByLanguage = {};
+      similarSeries.forEach((d, i) => {
+        bgColorByLanguage[d.language] = bgPalette[i % bgPalette.length];
+      });
+      const y = d3.scaleLinear().domain([0, Math.max(2, selectedMax)]).range([height, 0]);
+
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x).tickFormat(d3.format("d")))
+        .append("text")
+        .attr("x", width / 2)
+        .attr("y", 40)
+        .attr("fill", "black")
+        .style("font-size", "14px")
+        .text("Year");
+
+      svg.append("g")
+        .call(d3.axisLeft(y))
+        .append("text")
+        .attr("transform", "rotate(-90)")
+        .attr("y", -50)
+        .attr("x", -height / 2)
+        .attr("fill", "black")
+        .style("font-size", "14px")
+        .text("Publication Count");
+
+      const line = d3.line()
+        .x(d => x(d.year))
+        .y(d => y(d.count))
+        .defined(d => d.count > 0);
+
+      similarSeries.forEach(languageData => {
+        svg.append("path")
+          .datum(languageData.values)
+          .attr("fill", "none")
+          .attr("stroke", bgColorByLanguage[languageData.language])
+          .attr("stroke-width", 2)
+          .attr("stroke-opacity", 0.18)
+          .attr("d", line);
+      });
+
+      if (selectedSeries) {
+        svg.append("path")
+          .datum(selectedSeries.values)
+          .attr("fill", "none")
+          .attr("stroke", palette[0])
+          .attr("stroke-width", 4)
+          .attr("stroke-opacity", 1)
+          .attr("d", line);
+      }
+
+      if (Array.isArray(events) && events.length > 0) {
+        const displayedLangs = [selectedLanguage, ...similarSeries.map(d => d.language)];
+        const relevantEvents = events.filter(ev => {
+          if (!ev.languages || !Array.isArray(ev.languages)) return false;
+          return ev.languages.some(l => displayedLangs.includes(l));
+        });
+        relevantEvents.forEach(ev => {
+          if (typeof ev.year !== 'number' || !ev.label) return;
+          if (ev.year < d3.min(data.years) || ev.year > d3.max(data.years)) return;
+          svg.append("line")
+            .attr("x1", x(ev.year))
+            .attr("x2", x(ev.year))
+            .attr("y1", 0)
+            .attr("y2", height)
+            .attr("stroke", "#ff9800")
+            .attr("stroke-width", 2)
+            .attr("stroke-dasharray", "4,2");
+          svg.append("foreignObject")
+            .attr("x", x(ev.year) - 60)
+            .attr("y", -margin.top + 2)
+            .attr("width", 120)
+            .attr("height", 32)
+            .append("xhtml:div")
+            .style("text-align", "center")
+            .style("font-size", "13px")
+            .style("background", "#fffbe6")
+            .style("border", "1px solid #ffe082")
+            .style("border-radius", "4px")
+            .style("padding", "2px 4px")
+            .style("box-shadow", "0 1px 4px rgba(255,152,0,0.08)")
+            .style("cursor", "pointer")
+            .on("click", () => { if (ev.url) window.open(ev.url, '_blank'); })
+            .html(`<span title="${ev.label}">${ev.label.length > 28 ? ev.label.slice(0,25) + '…' : ev.label}</span>`);
+        });
+      }
+
+      const brush = d3.brushX()
+        .extent([[0, 0], [width, height]])
+        .on("end", brushed);
+
+      svg.append("g").attr("class", "brush").call(brush);
+
+      function brushed(event) {
+        const selection = event.selection;
+        if (!selection) {
+          document.getElementById('reset-button').style.display = 'none';
+          const years = data.years;
+          showYearRangeStats(d3.min(years), d3.max(years), selectedLanguage);
+          return;
+        }
+        const [x0, x1] = selection.map(x.invert);
+        const startYear = Math.round(x0);
+        const endYear = Math.round(x1);
+        showYearRangeStats(startYear, endYear, selectedLanguage);
+        document.getElementById('reset-button').style.display = 'inline-block';
+      }
+
+      const legend = d3.select("#legend");
+      const legendLangs = [selectedSeries, ...similarSeries].filter(Boolean);
+      legend.selectAll("*").remove();
+      legendLangs.forEach(languageData => {
+        const isSelected = languageData.language === selectedLanguage;
+        const color = isSelected ? palette[0] : bgColorByLanguage[languageData.language];
+        const item = legend.append("div").attr("class", "legend-item");
+        item.append("span")
+          .attr("class", isSelected ? "legend-line bold" : "legend-line")
+          .style("background-color", color)
+          .style("opacity", isSelected ? 1 : 0.6);
+        item.append("span")
+          .style("font-weight", isSelected ? "bold" : "normal")
+          .style("color", isSelected ? color : "#333")
+          .text(languageData.language);
+      });
+    }
+
+    // Responsive treemap: redraws on resize
+    function createTreemap(typeCounts, totalCount) {
+      const container = d3.select("#treemap-viz");
+      container.selectAll("*").remove();
+
+      // Get width from container, fallback to 400 if not available
+      const width = container.node().clientWidth || 400;
+      const height = 400;
+
+      // Set min/max limits for box sizes (user specified)
+      const minValue = 100; // Minimum value for a box
+      const maxValue = 500000; // Maximum value for a box
+      const data = {
+        name: "types",
+        children: Array.from(typeCounts, ([name, count]) => ({
+          name,
+          rawValue: count,
+          value: Math.max(minValue, Math.min(count, maxValue))
+        }))
+      };
+
+      // Add a title above the treemap with the number of types
+      container.append("div")
+        .attr("class", "treemap-title")
+        .style("font-weight", "bold")
+        .style("margin-bottom", "8px")
+        .text(`Publication Types Treemap (${data.children.length} types)`);
+
+      const root = d3.hierarchy(data)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      d3.treemap()
+        .size([width, height])
+        .padding(0.5)
+        .round(true)(root);
+
+      const color = d3.scaleOrdinal()
+        .domain(root.children.map(d => d.data.name))
+        .range(palette);
+
+      const svg = container
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", `0 0 ${width} ${height}`)
+        .style("font", "12px sans-serif");
+
+      const cell = svg.selectAll("g")
+        .data(root.leaves())
+        .join("g")
+        .attr("transform", d => `translate(${d.x0},${d.y0})`);
+
+      cell.append("rect")
+        .attr("class", "treemap-cell")
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0)
+        .attr("fill", d => color(d.data.name))
+        .attr("fill-opacity", 0.8)
+        .on("mouseover", function() {
+          d3.select(this).attr("fill-opacity", 1);
+        })
+        .on("mouseout", function() {
+          d3.select(this).attr("fill-opacity", 0.8);
         });
 
-        function processTimeSeriesData(data) {
-            // Extract year from date column and count by language and year
-            const yearLanguageCounts = {};
-            const years = new Set();
-            
-            data.forEach(row => {
-                if (!row.date || !row.language) return;
-                
-                // Try to extract year from date (handles various formats)
-                let year;
-                const dateStr = String(row.date).trim();
-                
-                // Try different date formats
-                if (/^\d{4}$/.test(dateStr)) {
-                    // Just a year: "2020"
-                    year = parseInt(dateStr);
-                } else if (/^\d{4}-/.test(dateStr)) {
-                    // ISO format: "2020-01-15"
-                    year = parseInt(dateStr.substring(0, 4));
-                } else if (/\/\d{4}$/.test(dateStr)) {
-                    // Format: "01/15/2020" or "15/01/2020"
-                    const parts = dateStr.split('/');
-                    year = parseInt(parts[parts.length - 1]);
-                } else {
-                    // Try to extract any 4-digit number
-                    const match = dateStr.match(/\b(1\d{3}|20\d{2})\b/);
-                    if (match) {
-                        year = parseInt(match[1]);
-                    }
-                }
-                
-                if (!year || year < 1500 || year > 2030) return; // Filter invalid years
-                
-                years.add(year);
-                const language = row.language.trim();
-                
-                if (!yearLanguageCounts[language]) {
-                    yearLanguageCounts[language] = {};
-                }
-                
-                if (!yearLanguageCounts[language][year]) {
-                    yearLanguageCounts[language][year] = 0;
-                }
-                
-                yearLanguageCounts[language][year]++;
-            });
-            
-            const sortedYears = Array.from(years).sort((a, b) => a - b);
-            
-            // Convert to series format
-            const series = Object.keys(yearLanguageCounts).map(language => {
-                return {
-                    language: language,
-                    values: sortedYears.map(year => ({
-                        year: year,
-                        count: yearLanguageCounts[language][year] || 0
-                    }))
-                };
-            });
-            
-            return { series: series, years: sortedYears };
+      cell.append("clipPath")
+        .attr("id", (d, i) => `clip-${i}`)
+        .append("rect")
+        .attr("width", d => d.x1 - d.x0)
+        .attr("height", d => d.y1 - d.y0);
+
+      // Only show text if the cell is big enough, otherwise add a tooltip
+      cell.each(function(d, i) {
+        const minWidth = 60, minHeight = 30;
+        const w = d.x1 - d.x0, h = d.y1 - d.y0;
+        const percent = totalCount > 0 ? (d.data.rawValue / totalCount * 100).toFixed(1) : 0;
+        if (w > minWidth && h > minHeight) {
+          d3.select(this)
+            .append("text")
+            .attr("class", "treemap-text")
+            .attr("clip-path", `url(#clip-${i})`)
+            .selectAll("tspan")
+            .data([
+              d.data.name,
+              `${d3.format(",")(d.data.rawValue)} (${percent}%)`
+            ])
+            .join("tspan")
+            .attr("x", 4)
+            .attr("y", (d, i) => 16 + i * 14)
+            .text(d => d);
         }
+        // Always add a tooltip with more stats
+        d3.select(this)
+          .append("title")
+          .text(
+            `${d.data.name}\n` +
+            `Count: ${d3.format(",")(d.data.rawValue)}\n` +
+            `Box size (clamped): ${d3.format(",")(d.value)}\n` +
+            `Percent: ${percent}%`
+          );
+      });
+    }
 
-        function createLineChart(data, selectedLanguage) {
-            const margin = {top: 20, right: 120, bottom: 50, left: 60};
-            const width = document.getElementById('chart').offsetWidth - margin.left - margin.right;
-            const height = 600 - margin.top - margin.bottom;
+    // Redraw treemap on window resize
+    let lastTypeCounts = null, lastTotalCount = null;
+    function redrawTreemapIfVisible() {
+      if (lastTypeCounts && lastTotalCount !== null) {
+        createTreemap(lastTypeCounts, lastTotalCount);
+      }
+    }
+    window.addEventListener('resize', redrawTreemapIfVisible);
 
-            const svg = d3.select("#chart")
-                .append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .append("g")
-                .attr("transform", `translate(${margin.left},${margin.top})`);
+    // Patch showYearRangeStats to store lastTypeCounts/lastTotalCount
+    const origShowYearRangeStats = showYearRangeStats;
+    showYearRangeStats = function(startYear, endYear, selectedLanguage) {
+      const statsDiv = d3.select("#selection-info");
+      statsDiv.html('');
 
-            // Scales
-            const x = d3.scaleLinear()
-                .domain(d3.extent(data.years))
-                .range([0, width]);
+      const filteredData = timeSeriesData.series.find(d => d.language === selectedLanguage);
 
-            const maxCount = d3.max(data.series, d => d3.max(d.values, v => v.count));
-            const y = d3.scaleLinear()
-                .domain([0, maxCount])
-                .range([height, 0]);
+      if (!filteredData) {
+        statsDiv.html(`<h3>Statistics for ${selectedLanguage}</h3><p>Data not found for this language.</p>`);
+        return;
+      }
 
-            // Color scale
-            const colorScale = d3.scaleOrdinal(d3.schemeCategory10);
+      const selectedValues = filteredData.values.filter(d => d.year >= startYear && d.year <= endYear);
 
-            // Axes
-            svg.append("g")
-                .attr("transform", `translate(0,${height})`)
-                .call(d3.axisBottom(x).tickFormat(d3.format("d")))
-                .append("text")
-                .attr("x", width / 2)
-                .attr("y", 40)
-                .attr("fill", "black")
-                .style("font-size", "14px")
-                .text("Year");
+      const totalCount = d3.sum(selectedValues, d => d.count);
 
-            svg.append("g")
-                .call(d3.axisLeft(y))
-                .append("text")
-                .attr("transform", "rotate(-90)")
-                .attr("y", -50)
-                .attr("x", -height / 2)
-                .attr("fill", "black")
-                .style("font-size", "14px")
-                .text("Publication Count");
+      const typeCounts = new Map();
+      const subjectCounts = new Map();
 
-            // Line generator
-            const line = d3.line()
-                .x(d => x(d.year))
-                .y(d => y(d.count));
-
-            // Sort series so selected language is drawn last (on top)
-            const sortedSeries = data.series.sort((a, b) => {
-                if (a.language === selectedLanguage) return 1;
-                if (b.language === selectedLanguage) return -1;
-                return 0;
-            });
-
-            // Draw lines
-            sortedSeries.forEach((languageData, i) => {
-                const isSelected = languageData.language === selectedLanguage;
-                
-                svg.append("path")
-                    .datum(languageData.values)
-                    .attr("fill", "none")
-                    .attr("stroke", isSelected ? "#e74c3c" : colorScale(i))
-                    .attr("stroke-width", isSelected ? 4 : 1.5)
-                    .attr("stroke-opacity", isSelected ? 1 : 0.3)
-                    .attr("d", line)
-                    .style("pointer-events", "none");
-            });
-
-            // Add legend for top languages + selected
-            const topLanguages = data.series
-                .sort((a, b) => d3.sum(b.values, v => v.count) - d3.sum(a.values, v => v.count))
-                .slice(0, 10);
-            
-            // Ensure selected language is in legend
-            if (selectedLanguage && !topLanguages.find(d => d.language === selectedLanguage)) {
-                const selectedData = data.series.find(d => d.language === selectedLanguage);
-                if (selectedData) {
-                    topLanguages.push(selectedData);
-                }
-            }
-
-            const legend = d3.select("#legend");
-            topLanguages.forEach((languageData, i) => {
-                const isSelected = languageData.language === selectedLanguage;
-                const color = isSelected ? "#e74c3c" : colorScale(data.series.indexOf(languageData));
-                
-                const item = legend.append("div")
-                    .attr("class", "legend-item");
-                
-                item.append("span")
-                    .attr("class", isSelected ? "legend-line bold" : "legend-line")
-                    .style("background-color", color)
-                    .style("opacity", isSelected ? 1 : 0.6);
-                
-                item.append("span")
-                    .style("font-weight", isSelected ? "bold" : "normal")
-                    .style("color", isSelected ? "#e74c3c" : "#333")
-                    .text(languageData.language);
-            });
+      selectedValues.forEach(d => {
+        if (d.type) {
+          Object.entries(d.type).forEach(([type, count]) => {
+            typeCounts.set(type, (typeCounts.get(type) || 0) + count);
+          });
         }
-    </script>
+        if (d.subject) {
+          Object.entries(d.subject).forEach(([subject, count]) => {
+            subjectCounts.set(subject, (subjectCounts.get(subject) || 0) + count);
+          });
+        }
+      });
+
+      lastTypeCounts = typeCounts;
+      lastTotalCount = totalCount;
+
+      statsDiv.append("h3").text(`Statistics for ${selectedLanguage}: ${startYear} - ${endYear}`);
+      statsDiv.append("p").text(`Total Publications: ${d3.format(",")(totalCount)}`);
+
+      // Add number of types and subjects
+      const statsGrid = statsDiv.append("div").attr("class", "stats-grid");
+
+      // Treemap for types
+      statsDiv.append("div")
+        .attr("class", "viz-container")
+        .html(`
+          <div id="treemap-viz"></div>
+        `);
+
+      // Sunburst for subjects
+      statsDiv.append("div")
+        .attr("class", "viz-container")
+        .html(`
+          <h4>Publication Subjects</h4>
+          <div id="sunburst-viz"></div>
+        `);
+
+      createTreemap(typeCounts, totalCount);
+      createSunburst(subjectCounts, totalCount);
+    }
+
+    function createSunburst(subjectCounts, totalCount) {
+      const container = d3.select("#sunburst-viz");
+      container.selectAll("*").remove();
+
+      const width = container.node().clientWidth;
+      const height = 400;
+      const radius = Math.min(width, height) / 2;
+
+      // Group subjects by top-level category (you'll need to add this structure)
+      // For now, creating a simple hierarchy
+      const data = {
+        name: "subjects",
+        children: Array.from(subjectCounts, ([name, count]) => ({
+          name,
+          value: count
+        }))
+      };
+
+      // Add a title above the sunburst with the number of subjects
+      container.append("div")
+        .attr("class", "sunburst-title")
+        .style("font-weight", "bold")
+        .style("margin-bottom", "8px")
+        .text(`Publication Subjects (${data.children.length} subjects)`);
+
+      const root = d3.hierarchy(data)
+        .sum(d => d.value)
+        .sort((a, b) => b.value - a.value);
+
+      const color = d3.scaleOrdinal()
+        .domain(root.children.map(d => d.data.name))
+        .range(palette);
+
+      const partition = d3.partition()
+        .size([2 * Math.PI, radius]);
+
+      partition(root);
+
+      const arc = d3.arc()
+        .startAngle(d => d.x0)
+        .endAngle(d => d.x1)
+        .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.001)) // less whitespace
+        .padRadius(radius / 2)
+        .innerRadius(d => d.y0)
+        .outerRadius(d => d.y1 - 1);
+
+      const svg = container
+        .append("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .append("g")
+        .attr("transform", `translate(${width / 2},${height / 2})`);
+
+      const breadcrumb = container.insert("div", "svg")
+        .attr("class", "breadcrumb")
+        .text("Click on a segment to zoom in");
+
+      let currentRoot = root;
+
+      function render(newRoot) {
+        currentRoot = newRoot;
+
+        const path = svg.selectAll("path")
+          .data(newRoot.descendants().filter(d => d.depth > 0), d => d.data.name);
+
+        path.exit().remove();
+
+        const pathEnter = path.enter()
+          .append("path")
+          .attr("class", "sunburst-arc")
+          .attr("fill", d => color(d.data.name))
+          .attr("d", arc)
+          .style("cursor", "pointer")
+          .on("click", clicked)
+          .on("mouseover", function(event, d) {
+            // Show tooltip with subject name
+            const tooltip = d3.select("body").append("div")
+              .attr("class", "sunburst-tooltip")
+              .style("position", "absolute")
+              .style("background", "rgba(0,0,0,0.85)")
+              .style("color", "#fff")
+              .style("padding", "6px 12px")
+              .style("border-radius", "4px")
+              .style("pointer-events", "none")
+              .style("font-size", "13px")
+              .style("z-index", 1000)
+              .html(`<strong>${d.data.name}</strong><br>Count: ${d3.format(",")(d.value)}`);
+            const [x, y] = d3.pointer(event);
+            tooltip.style("left", (event.pageX + 12) + "px")
+                   .style("top", (event.pageY - 24) + "px");
+          })
+          .on("mousemove", function(event) {
+            d3.select(".sunburst-tooltip")
+              .style("left", (event.pageX + 12) + "px")
+              .style("top", (event.pageY - 24) + "px");
+          })
+          .on("mouseout", function() {
+            d3.selectAll(".sunburst-tooltip").remove();
+          });
+
+        path.merge(pathEnter)
+          .transition()
+          .duration(750)
+          .attrTween("d", d => {
+            const i = d3.interpolate(d.x0, d.x1);
+            return t => {
+              d.x1 = i(t);
+              return arc(d);
+            };
+          });
+
+        // Update breadcrumb
+        const ancestors = newRoot.ancestors().reverse().slice(1);
+        if (ancestors.length === 0) {
+          breadcrumb.html("Click on a segment to zoom in");
+        } else {
+          breadcrumb.html(ancestors.map((d, i) => {
+            const percent = totalCount > 0 ? (d.value / totalCount * 100).toFixed(1) : 0;
+            return `<span class="breadcrumb-item">${d.data.name}</span> (${d3.format(",")(d.value)}, ${percent}%)`;
+          }).join(" > "));
+        }
+      }
+
+      function clicked(event, p) {
+        if (p === currentRoot) {
+          // Zoom out to parent
+          const parent = currentRoot.parent;
+          if (parent) {
+            render(parent);
+          } else {
+            render(root);
+          }
+        } else {
+          render(p);
+        }
+      }
+
+      render(root);
+    }
+
+    function showYearRangeStats(startYear, endYear, selectedLanguage) {
+      const statsDiv = d3.select("#selection-info");
+      statsDiv.html('');
+
+      const filteredData = timeSeriesData.series.find(d => d.language === selectedLanguage);
+
+      if (!filteredData) {
+        statsDiv.html(`<h3>Statistics for ${selectedLanguage}</h3><p>Data not found for this language.</p>`);
+        return;
+      }
+
+      const selectedValues = filteredData.values.filter(d => d.year >= startYear && d.year <= endYear);
+
+      const totalCount = d3.sum(selectedValues, d => d.count);
+
+      const typeCounts = new Map();
+      const subjectCounts = new Map();
+
+      selectedValues.forEach(d => {
+        if (d.type) {
+          Object.entries(d.type).forEach(([type, count]) => {
+            typeCounts.set(type, (typeCounts.get(type) || 0) + count);
+          });
+        }
+        if (d.subject) {
+          Object.entries(d.subject).forEach(([subject, count]) => {
+            subjectCounts.set(subject, (subjectCounts.get(subject) || 0) + count);
+          });
+        }
+      });
+
+      statsDiv.append("h3").text(`Statistics for ${selectedLanguage}: ${startYear} - ${endYear}`);
+      statsDiv.append("p").text(`Total Publications: ${d3.format(",")(totalCount)}`);
+      statsDiv.append("div").html(`<span class="stat-label">Number of Types</span><span class="stat-value">${typeCounts.size}</span>`);
+      statsDiv.append("div").html(`<span class="stat-label">Number of Subjects</span><span class="stat-value">${subjectCounts.size}</span>`);
+
+      // Treemap for types
+      statsDiv.append("div")
+        .attr("class", "viz-container")
+        .html(`
+          <span class="treemap-title"></span>
+          <div id="treemap-viz"></div>
+        `);
+
+      // Sunburst for subjects
+      statsDiv.append("div")
+        .attr("class", "viz-container")
+        .html(`
+          <span class="sunburst-title"></span>
+          <div id="sunburst-viz"></div>
+        `);
+
+      createTreemap(typeCounts, totalCount);
+      createSunburst(subjectCounts, totalCount);
+    }
+
+    document.getElementById('reset-button').addEventListener('click', () => {
+      d3.select('.brush').call(d3.brushX().clear);
+      const years = timeSeriesData.years;
+      showYearRangeStats(d3.min(years), d3.max(years), selectedLanguage);
+      document.getElementById('reset-button').style.display = 'none';
+    });
+
+  </script>
 </body>
 </html>
