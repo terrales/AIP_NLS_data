@@ -109,14 +109,12 @@
       display: flex;
       flex-direction: row;
       gap: 24px;
-      justify-content: flex-start;
-      align-items: flex-start;
-      margin-top: 0px;
-      /* FIX: Add forced bottom margin to account for 350px tall plots 
-              when plots use absolute/non-flow elements internally. */
-      margin-bottom: 100px;
-      position: relative; 
-      /* overflow: hidden; removed to prevent plot clipping */
+      justify-content: stretch;
+      align-items: stretch;
+  margin-top: 0px;
+  margin-bottom: 24px;
+      position: relative;
+      width: 100%;
     }
     .viz-container {
       min-width: 0;
@@ -124,14 +122,70 @@
       margin-bottom: 0;
     }
     .viz-container.treemap {
-      flex: 0 0 calc(60% - 12px);
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+    flex: 2.5 1 0;
+      min-width: 400px;
+      max-width: none;
+      width: 100%;
     }
     .viz-container.sunburst {
-      flex: 0 0 calc(40% - 12px);
-    }
-    #treemap-viz, #sunburst-viz {
+      flex: 2 1 0;
+      min-width: 400px;
+      max-width: none;
       width: 100%;
-      height: 350px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+    #sunburst-viz {
+      width: 100%;
+      min-height: 340px;
+      height: 450px; 
+      max-height: none;
+      display: flex; 
+      align-items: flex-start; 
+      flex-direction: column; 
+      justify-content: flex-start; 
+      overflow: visible; 
+    }
+    .sunburst-header-block {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      margin-bottom: 6px;
+    }
+    @media (max-width: 900px) {
+      .viz-container.sunburst, #sunburst-viz {
+      min-width: 0;
+      height: 400px;
+      min-height:340px;
+      }
+    }
+
+    .treemap-other-list {
+      height: 370px;
+      overflow-y: auto;
+      font-size: 12px;
+      padding: 12px 10px 12px 16px;
+      margin: 0 0 0 8px;
+      line-height: 1.5;
+    min-width: 160px;
+    max-width: 270px;
+      color: #14143b;
+      background: #ffffff;
+      border-radius: 6px;
+      border: 1.5px solid #e0e0e0;
+      box-shadow: 0 2px 8px rgba(62, 44, 80, 0.07);
+      display: none;
+      position: static;
+      align-self: stretch;
+    }
+    .treemap-other-list.active {
+      display: block;
     }
     
     .back-button {
@@ -207,9 +261,9 @@
       text-shadow: 0 1px 2px rgba(0,0,0,0.5);
     }
     .sunburst-arc {
-      cursor: pointer;
-      stroke: #fff;
-      stroke-width: 1px;
+  cursor: pointer;
+  stroke: none;
+  stroke-width: 0;
     }
     .sunburst-arc:hover {
       opacity: 0.8;
@@ -236,8 +290,7 @@
     }
     /* STYLES for compact sample view */
     .books-sample {
-      /* FIX: Removed fixed 220px margin, relying on margin-bottom of .bottom-charts */
-      margin-top: 15px; 
+      margin-top: 0px;
       padding: 15px;
       background: #fff9f0;
       border-radius: 4px;
@@ -354,7 +407,8 @@
       <div id="selection-info" style="display: none;"></div>
       <div class="bottom-charts">
         <div class="viz-container treemap">
-          <div id="treemap-viz"></div>
+          <div id="treemap-viz" style="position:relative;"></div>
+          <div id="treemap-other-list" class="treemap-other-list"></div>
         </div>
         <div class="viz-container sunburst">
           <div id="sunburst-viz"></div>
@@ -366,58 +420,81 @@
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedLanguage = urlParams.get('language');
-    
-    let timeSeriesData = null; 
-    let currentLangSamples = null;
 
-    const palette = [
-      '#14143b',
-      '#3d2d5d',
-      '#694980',
-      '#9866a3',
-      '#ca85c6',
-      '#ffa5e7',
-      '#fc8fcc',
-      '#f679ae',
-      '#ee6490',
-      '#e35071',
-      '#d43d51'
-    ];
-    let colorByLanguage = {};
+  const urlParams = new URLSearchParams(window.location.search);
+  const selectedLanguage = urlParams.get('language');
 
-    if (selectedLanguage) {
-      document.getElementById('language-name').textContent =
-        `${selectedLanguage} - Popularity Over Time`;
+  let timeSeriesData = null;
+  let currentLangSamples = null;
+  let subjectTopicReference = null;
+
+  // Palette for treemap/sunburst (darkest = largest)
+  const treemapPalette = [
+    '#14143b',
+    '#332e58',
+    '#524a77',
+    '#736997',
+    '#9589b9',
+    '#b8aadb',
+    '#dccdff'
+  ];
+
+  // Palette for line chart (current usage)
+  const linePalette = [
+    '#14143b',
+    '#3d2d5d',
+    '#694980',
+    '#9866a3',
+    '#ca85c6',
+    '#ffa5e7',
+    '#fc8fcc',
+    '#f679ae',
+    '#ee6490',
+    '#e35071',
+    '#d43d51'
+  ];
+  let colorByLanguage = {};
+
+  // Load subject_topic_reference.json at page load
+  fetch('./subject_topic_reference.json')
+    .then(r => r.json())
+    .then(data => { subjectTopicReference = data; })
+    .catch(e => {
+    console.warn('Could not load subject_topic_reference.json:', e);
+    subjectTopicReference = {};
+    });
+
+  if (selectedLanguage) {
+    document.getElementById('language-name').textContent =
+    `${selectedLanguage} - Popularity Over Time`;
+  }
+
+  function loadSamplesForLanguage(lang) {
+    const safeLangName = lang.replace(' ', '_').replace('/', '_');
+    const url = `./samples_shards/samples_${safeLangName}.json`;
+
+    if (currentLangSamples && currentLangSamples.language === lang) {
+      return Promise.resolve();
     }
-    
-    function loadSamplesForLanguage(lang) {
-        const safeLangName = lang.replace(' ', '_').replace('/', '_');
-        const url = `./samples_shards/samples_${safeLangName}.json`;
-        
-        if (currentLangSamples && currentLangSamples.language === lang) {
-            return Promise.resolve();
+
+    console.log(`Fetching sample data for: ${lang}`);
+
+    return fetch(url)
+      .then(response => {
+        if (!response.ok) {
+          console.warn(`Sample shard not found for ${lang} at ${url}. Treating samples as empty.`);
+          return {};
         }
-
-        console.log(`Fetching sample data for: ${lang}`);
-        
-        return fetch(url)
-            .then(response => {
-                if (!response.ok) {
-                    console.warn(`Sample shard not found for ${lang} at ${url}. Treating samples as empty.`);
-                    return {};
-                }
-                return response.json();
-            })
-            .then(data => {
-                currentLangSamples = { language: lang, data: data };
-            })
-            .catch(error => {
-                console.error(`Error loading sample shard for ${lang}:`, error);
-                currentLangSamples = { language: lang, data: {} };
-            });
-    }
+        return response.json();
+      })
+      .then(data => {
+        currentLangSamples = { language: lang, data: data };
+      })
+      .catch(error => {
+        console.error(`Error loading sample shard for ${lang}:`, error);
+        currentLangSamples = { language: lang, data: {} };
+      });
+  }
 
     Promise.all([
       fetch('./language_timeseries_detailed.json')
@@ -459,8 +536,8 @@
       const sortedLangs = langTotals.sort((a, b) => b.total - a.total);
       colorByLanguage = {};
       if (sortedLangs.length > 0) {
-        colorByLanguage[sortedLangs[0].language] = palette[0];
-        const restPalette = palette.slice(1);
+        colorByLanguage[sortedLangs[0].language] = linePalette[0];
+        const restPalette = linePalette.slice(1);
         const restCount = sortedLangs.length - 1;
         for (let i = 1; i < sortedLangs.length; i++) {
           const idx = restCount > 1 ? Math.floor((i - 1) * restPalette.length / restCount) : 0;
@@ -515,7 +592,7 @@
         filtered = filtered.slice(0, 10);
       }
       similarSeries = filtered.map(({max, diff, ...rest}) => rest);
-      const bgPalette = palette.slice(1);
+  const bgPalette = linePalette.slice(1);
       const bgColorByLanguage = {};
       similarSeries.forEach((d, i) => {
         bgColorByLanguage[d.language] = bgPalette[i % bgPalette.length];
@@ -561,8 +638,8 @@
         svg.append("path")
           .datum(selectedSeries.values)
           .attr("fill", "none")
-          .attr("stroke", palette[0])
-          .attr("stroke-width", 4)
+          .attr("stroke", linePalette[0])
+          .attr("stroke-width", 3)
           .attr("stroke-opacity", 1)
           .attr("d", line);
       }
@@ -573,20 +650,32 @@
           if (!ev.languages || !Array.isArray(ev.languages)) return false;
           return ev.languages.some(l => displayedLangs.includes(l));
         });
-        relevantEvents.forEach(ev => {
+        // Sort events by year for better staggering
+        relevantEvents.sort((a, b) => a.year - b.year);
+        // Track last used x positions to avoid overlap
+        const labelSlots = [];
+        const slotHeight = 36; // px vertical offset per slot
+        relevantEvents.forEach((ev, i) => {
           if (typeof ev.year !== 'number' || !ev.label) return;
           if (ev.year < d3.min(data.years) || ev.year > d3.max(data.years)) return;
+          const xPos = x(ev.year);
+          // Find a free slot (no overlap with previous labels)
+          let slot = 0;
+          while (labelSlots.some(s => Math.abs(s.x - xPos) < 110 && s.slot === slot)) {
+            slot++;
+          }
+          labelSlots.push({x: xPos, slot});
           svg.append("line")
-            .attr("x1", x(ev.year))
-            .attr("x2", x(ev.year))
+            .attr("x1", xPos)
+            .attr("x2", xPos)
             .attr("y1", 0)
             .attr("y2", height)
             .attr("stroke", "#ff9800")
             .attr("stroke-width", 2)
             .attr("stroke-dasharray", "4,2");
           svg.append("foreignObject")
-            .attr("x", x(ev.year) - 60)
-            .attr("y", -margin.top + 2)
+            .attr("x", xPos - 60)
+            .attr("y", -margin.top + 2 + slot * slotHeight)
             .attr("width", 120)
             .attr("height", 32)
             .append("xhtml:div")
@@ -639,7 +728,7 @@
       legend.selectAll("*").remove();
       legendLangs.forEach(languageData => {
         const isSelected = languageData.language === selectedLanguage;
-        const color = isSelected ? palette[0] : bgColorByLanguage[languageData.language];
+        const color = isSelected ? linePalette[0] : bgColorByLanguage[languageData.language];
         const item = legend.append("div").attr("class", "legend-item");
         item.append("span")
           .attr("class", isSelected ? "legend-line bold" : "legend-line")
@@ -842,27 +931,65 @@
       container.selectAll("*").remove();
       
       if (typeCounts.size === 0) {
-          container.html('<p style="padding: 15px;">No publication type data available for this selection.</p>');
-          return; 
+        container.html('<p style="padding: 15px;">No publication type data available for this selection.</p>');
+        return;
       }
 
       const width = container.node().clientWidth || 300;
       const height = 350;
 
-      const minValue = 100;
-      const maxValue = 200000;
+      // Group types with 5 or fewer entries under 'Other'
+      const mainTypes = [];
+      const otherTypes = [];
+      typeCounts.forEach((count, name) => {
+        if (count <= 5) {
+          otherTypes.push({ name, count });
+        } else {
+          mainTypes.push({ name, count });
+        }
+      });
+
+      // Compose children for treemap
+      const children = mainTypes.map(t => ({
+        name: t.name,
+        rawValue: t.count,
+        value: Math.max(300, Math.min(t.count, 200000))
+      }));
+      if (otherTypes.length > 0) {
+        const otherTotal = otherTypes.reduce((sum, t) => sum + t.count, 0);
+        children.push({
+          name: 'Other',
+          rawValue: otherTotal,
+          value: Math.max(300, Math.min(otherTotal, 200000)),
+          _otherNames: otherTypes.map(t => t.name)
+        });
+      }
       const data = {
         name: "types",
-        children: Array.from(typeCounts, ([name, count]) => ({
-          name,
-          rawValue: count,
-          value: Math.max(minValue, Math.min(count, maxValue))
-        }))
+        children: children
       };
 
+      // Treemap title with count and scrollable list for 'Other'
+      let titleHtml = `Publication Types`;
+      if (otherTypes.length > 0) {
+        titleHtml += `<br><span style='font-size:12px;color:#666;'>${data.children.length} displayed types, ${otherTypes.length} types grouped as <b>Other</b></span>`;
+      }
       container.append("div")
         .attr("class", "treemap-title")
-        .text(`Publication Types Treemap (${data.children.length} types)`);
+        .html(titleHtml);
+
+      // Render the scrollable list to the side if there are 'Other' types
+      const otherListDiv = d3.select('#treemap-other-list');
+      if (otherTypes.length > 0) {
+        otherListDiv.classed('active', true);
+        otherListDiv.html(
+          `<div style='font-weight:bold; color:#302e67; margin-bottom:0px;'> Other types (<=5 records):</div>` +
+          `<div style='white-space:normal; word-break:break-word;'>${otherTypes.map(t => t.name).sort().join(", ")}</div>`
+        );
+      } else {
+        otherListDiv.classed('active', false);
+        otherListDiv.html("");
+      }
 
       const root = d3.hierarchy(data)
         .sum(d => d.value)
@@ -873,9 +1000,13 @@
         .padding(0.5)
         .round(true)(root);
 
+      // Assign darkest color to largest type, lighter to smaller
+      const sortedTypes = root.children.map(d => d.data.name);
+      const treemapColors = [...treemapPalette];
+      while (treemapColors.length < sortedTypes.length) treemapColors.push(treemapPalette[treemapPalette.length - 1]);
       const color = d3.scaleOrdinal()
-        .domain(root.children.map(d => d.data.name))
-        .range(palette);
+        .domain(sortedTypes)
+        .range(treemapColors);
 
       const svg = container
         .append("svg")
@@ -895,8 +1026,8 @@
         .attr("height", d => d.y1 - d.y0)
         .attr("fill", d => color(d.data.name) || '#aaaaaa')
         .attr("fill-opacity", 0.8)
-        .attr("stroke", d => d.data.name === selectedFilters.type ? "#28a745" : "#fff") 
-        .attr("stroke-width", d => d.data.name === selectedFilters.type ? 4 : 2) 
+        .attr("stroke", d => d.data.name === selectedFilters.type ? "#28a745" : "#fff")
+        .attr("stroke-width", d => d.data.name === selectedFilters.type ? 4 : 2)
         .on("mouseover", function() {
           d3.select(this).attr("fill-opacity", 1);
         })
@@ -909,7 +1040,6 @@
           } else {
             selectedFilters.type = d.data.name;
           }
-          
           showYearRangeStats(selectedFilters.startYear, selectedFilters.endYear, selectedLanguage);
           loadSamplesForLanguage(selectedLanguage).then(displayBooksSample);
         });
@@ -940,14 +1070,13 @@
             .attr("y", 16)
             .text(label);
         }
+        let titleText = `${d.data.name}\nCount: ${d3.format(",")(d.data.rawValue)}\nPercent: ${percent}%`;
+        if (d.data.name === 'Other' && d.data._otherNames) {
+          titleText += `\nTypes grouped: ${d.data._otherNames.length}\n` + d.data._otherNames.join(', ');
+        }
         d3.select(this)
           .append("title")
-          .text(
-            `${d.data.name}\n` +
-            `Count: ${d3.format(",")(d.data.rawValue)}\n` +
-            `Box size (clamped): ${d3.format(",")(d.value)}\n` +
-            `Percent: ${percent}%`
-          );
+          .text(titleText);
       });
     }
 
@@ -958,161 +1087,350 @@
     }
     window.addEventListener('resize', redrawTreemapIfVisible);
 
-    // --- D3 Sunburst (Subjects) ---
-    function createSunburst(subjectCounts, totalCount) {
-      const container = d3.select("#sunburst-viz");
-      container.selectAll("*").remove();
-      
-      if (subjectCounts.size === 0) {
-          container.html('<p style="padding: 15px;">No subject data available for this selection.</p>');
-          return; 
+// --- D3 Sunburst (Subjects) ---
+// Zoomable sunburst adapted from Observable example, with custom color palette and subject hierarchy.
+function createSunburst(subjectCounts, totalCount) {
+  const container = d3.select("#sunburst-viz");
+  container.selectAll("*").remove();
+
+  if ((!subjectTopicReference || subjectCounts.size === 0) && (!window._sunburstHasDrawn)) {
+    container.html('<p style="padding: 15px;">No subject data or topic reference available for this selection.</p>');
+    return;
+  }
+
+  // Build hierarchy: topic_0 > topic_1 > subject. If no topic_1, subject goes directly under topic_0.
+  const hierarchy = {};
+  for (const [subject, count] of subjectCounts.entries ? subjectCounts.entries() : []) {
+    if (count > 0) {
+      let topics = subjectTopicReference && subjectTopicReference[subject] ? subjectTopicReference[subject] : {};
+      let topic0 = topics.topic_0 || "Other";
+      let topic1 = topics.topic_1 || null;
+      if (!hierarchy[topic0]) hierarchy[topic0] = {};
+      if (topic1) {
+        if (!hierarchy[topic0][topic1]) hierarchy[topic0][topic1] = [];
+        hierarchy[topic0][topic1].push({ name: subject, value: count });
+      } else {
+        if (!hierarchy[topic0]["_direct"]) hierarchy[topic0]["_direct"] = [];
+        hierarchy[topic0]["_direct"].push({ name: subject, value: count });
       }
+    }
+  }
 
-      const width = container.node().clientWidth || 400;
-      const height = 350;
-      const radius = Math.min(width, height) / 2;
-
-      const data = {
-        name: "subjects",
-        children: Array.from(subjectCounts, ([name, count]) => ({
-          name,
-          value: count
-        }))
-      };
-
-      container.append("div")
-        .attr("class", "sunburst-title")
-        .text(`Publication Subjects (${data.children.length} subjects)`);
-
-      const root = d3.hierarchy(data)
-        .sum(d => d.value)
-        .sort((a, b) => b.value - a.value);
-
-      const color = d3.scaleOrdinal()
-        .domain(root.children.map(d => d.data.name))
-        .range(palette);
-
-      const partition = d3.partition()
-        .size([2 * Math.PI, radius]);
-
-      partition(root);
-
-      const arc = d3.arc()
-        .startAngle(d => d.x0)
-        .endAngle(d => d.x1)
-        .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.001))
-        .padRadius(radius / 2)
-        .innerRadius(d => d.y0)
-        .outerRadius(d => d.y1 - 1);
-
-      const svg = container
-        .append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .append("g")
-        .attr("transform", `translate(${width / 2},${height / 2})`);
-
-      const breadcrumb = container.insert("div", "svg")
-        .attr("class", "breadcrumb")
-        .text("Click on a segment to zoom in");
-
-      let currentRoot = root;
-      let path; 
-
-      function render(newRoot) {
-        currentRoot = newRoot;
-
-        path = svg.selectAll("path")
-          .data(newRoot.descendants().filter(d => d.depth > 0), d => d.data.name);
-
-        path.exit().remove();
-
-        const pathEnter = path.enter()
-          .append("path")
-          .attr("class", "sunburst-arc")
-          .attr("fill", d => color(d.data.name) || '#aaaaaa')
-          .attr("stroke", d => d.data.name === selectedFilters.subject ? "#28a745" : "#fff") 
-          .attr("stroke-width", d => d.data.name === selectedFilters.subject ? 3 : 1) 
-          .attr("d", arc)
-          .style("cursor", "pointer")
-          .on("click", function(event, d) {
-            event.stopPropagation();
-            
-            if (selectedFilters.subject === d.data.name) {
-                selectedFilters.subject = null;
-            } else {
-                selectedFilters.subject = d.data.name;
-            }
-
-            svg.selectAll("path")
-                .attr("stroke", p => p.data.name === selectedFilters.subject ? "#28a745" : "#fff")
-                .attr("stroke-width", p => p.data.name === selectedFilters.subject ? 3 : 1);
-            
-            showYearRangeStats(selectedFilters.startYear, selectedFilters.endYear, selectedLanguage);
-            loadSamplesForLanguage(selectedLanguage).then(displayBooksSample); 
-
-            if (d !== root) {
-                if (d === currentRoot) {
-                    const parent = currentRoot.parent;
-                    if (parent) {
-                        render(parent);
-                    } else {
-                        render(root);
-                    }
-                } else {
-                    render(d);
-                }
-            }
-          })
-          .on("mouseover", function(event, d) {
-            const tooltip = d3.select("body").append("div")
-              .attr("class", "sunburst-tooltip")
-              .style("position", "absolute")
-              .style("background", "rgba(0,0,0,0.85)")
-              .style("color", "#fff")
-              .style("padding", "6px 12px")
-              .style("border-radius", "4px")
-              .style("pointer-events", "none")
-              .style("font-size", "13px")
-              .style("z-index", 1000)
-              .html(`<strong>${d.data.name}</strong><br>Count: ${d3.format(",")(d.value)}`);
-            tooltip.style("left", (event.pageX + 12) + "px")
-                   .style("top", (event.pageY - 24) + "px");
-          })
-          .on("mousemove", function(event) {
-            d3.select(".sunburst-tooltip")
-              .style("left", (event.pageX + 12) + "px")
-              .style("top", (event.pageY - 24) + "px");
-          })
-          .on("mouseout", function() {
-            d3.selectAll(".sunburst-tooltip").remove();
-          });
-
-        path.merge(pathEnter)
-          .transition()
-          .duration(750)
-          .attrTween("d", d => {
-            const i = d3.interpolate(d.x0, d.x1);
-            return t => {
-              d.x1 = i(t);
-              return arc(d);
-            };
-          });
-
-        const ancestors = newRoot.ancestors().reverse().slice(1);
-        if (ancestors.length === 0) {
-          breadcrumb.html("Click on a segment to zoom in");
-        } else {
-          breadcrumb.html(ancestors.map((d, i) => {
-            const percent = totalCount > 0 ? (d.value / totalCount * 100).toFixed(1) : 0;
-            return `<span class="breadcrumb-item">${d.data.name}</span> (${d3.format(",")(d.value)}, ${percent}%)`;
-          }).join(" > "));
+  // Convert to d3 hierarchy format - Filter out empty branches
+  const data = {
+    name: "Subjects",
+    children: Object.entries(hierarchy).map(([topic0, topic1s]) => {
+      // topic1s: { topic1: [subjects], _direct: [subjects] }
+      let children = [];
+      Object.entries(topic1s).forEach(([topic1, subjects]) => {
+        if (topic1 === "_direct") {
+          children.push(...subjects); // subjects directly under topic0
+        } else if (subjects.length) {
+          children.push({ name: topic1, children: subjects });
         }
-      }
+      });
+      return { name: topic0, children: children.filter(d => d && (d.children ? d.children.length : true)) };
+    }).filter(t0 => t0.children.length > 0)
+  };
 
-      render(root);
+  if (data.children.length === 0) {
+    container.html('<p style="padding: 15px;">No subject data available after applying filtering rules.</p>');
+    return;
+  }
+
+  // FIX: Increase SVG container size and add more padding to prevent clipping.
+  const width = 370;
+  const height = 370;
+  const radius = Math.min(width, height) / 2 - 125;
+
+  // Sunburst title and caption block
+  const sunburstHeader = container.append("div")
+    .attr("class", "sunburst-header-block")
+    .style("margin-bottom", "6px");
+  sunburstHeader.append("div")
+    .attr("class", "sunburst-title")
+    .text("Publication Topics");
+  sunburstHeader.append("div")
+    .text(`${subjectCounts.size} unique subjects. Click segments to zoom in. Click leaf nodes to filter by subject.`)
+    .attr("class", "sunburst-caption")
+    .style("font-size", "12px")
+    .style("color", "#666")
+    .style("margin-bottom", "8px")
+
+  // D3 hierarchy and partition
+  const root = d3.hierarchy(data)
+    .sum(d => d.value)
+    .sort((a, b) => b.value - a.value);
+
+  d3.partition()
+    .size([2 * Math.PI, root.height + 1])
+    (root);
+
+  root.each(d => d.current = d);
+
+  // Color palette: assign palette by topic_0, fallback to palette[0]
+  const topic0Names = data.children.map(d => d.name);
+  const sunburstPalette = treemapPalette;
+  while (sunburstPalette.length < topic0Names.length) sunburstPalette.push(treemapPalette[treemapPalette.length - 1]);
+  const colorByTopic0 = {};
+  topic0Names.forEach((name, i) => colorByTopic0[name] = sunburstPalette[i % sunburstPalette.length]);
+
+  // Arc generator (smaller empty center)
+  const arc = d3.arc()
+    .startAngle(d => d.x0)
+    .endAngle(d => d.x1)
+    .padAngle(d => Math.min((d.x1 - d.x0) / 2, 0.005))
+    .padRadius(radius * 1.5)
+    .innerRadius(d => d.y0 === 0 ? 0.05 * radius : d.y0 * radius)
+    .outerRadius(d => Math.max(d.y0 * radius, d.y1 * radius - 1));
+
+  // SVG container
+  const svg = container
+    .append("svg")
+    .attr("width", width)
+    .attr("height", height)
+    .attr("viewBox", [-(width / 2), -(height / 2), width, height])
+    .style("font", "11px sans-serif")
+    .style("display", "block")
+    .style("margin", "0 auto");
+
+  // Breadcrumb
+  const breadcrumb = container.insert("div", "svg")
+    .attr("class", "breadcrumb")
+
+  // Mark that the sunburst has drawn at least once
+  window._sunburstHasDrawn = true;
+
+  // Arcs
+  const path = svg.append("g")
+    .selectAll("path")
+    .data(root.descendants().slice(1))
+    .join("path")
+    .attr("class", "sunburst-arc")
+    .attr("fill", d => {
+      let t0 = d;
+      while (t0.depth > 1) t0 = t0.parent;
+      return colorByTopic0[t0.data.name] || sunburstPalette[0];
+    })
+    .attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.7 : 0.45) : 0)
+    .attr("pointer-events", d => arcVisible(d.current) ? "auto" : "none")
+    .attr("stroke", d => d.data.name === selectedFilters.subject ? "#28a745" : "none")
+    .attr("stroke-width", d => d.data.name === selectedFilters.subject ? 3 : 0)
+    .attr("d", d => arc(d.current));
+
+  // Tooltip
+  path.on("mouseover", function(event, d) {
+    d3.select(this).attr("fill-opacity", 1);
+    const tooltip = d3.select("body").append("div")
+      .attr("class", "sunburst-tooltip")
+      .style("position", "absolute")
+      .style("background", "rgba(0,0,0,0.85)")
+      .style("color", "#fff")
+      .style("padding", "6px 12px")
+      .style("border-radius", "4px")
+      .style("pointer-events", "none")
+      .style("font-size", "13px")
+      .style("z-index", 1000)
+      .html(`<strong>${d.data.name}</strong><br>Count: ${d3.format(",")(d.value)}`);
+    tooltip.style("left", (event.pageX + 12) + "px")
+      .style("top", (event.pageY - 24) + "px");
+  })
+    .on("mousemove", function(event) {
+      d3.select(".sunburst-tooltip")
+        .style("left", (event.pageX + 12) + "px")
+        .style("top", (event.pageY - 24) + "px");
+    })
+    .on("mouseout", function() {
+      d3.select(this).attr("fill-opacity", d => arcVisible(d.current) ? (d.children ? 0.7 : 0.45) : 0);
+      d3.selectAll(".sunburst-tooltip").remove();
+    });
+
+  // Click to zoom (only if has children)
+  path.filter(d => d.children)
+    .style("cursor", "pointer")
+    .on("click", function(event, d) {
+      if (!d.children || d.children.length === 0) {
+        // If no children, stay in the current view
+        return;
+      }
+      clicked(event, d);
+    });
+
+  // Click on leaf to filter subject
+  path.filter(d => !d.children)
+    .style("cursor", "pointer")
+    .on("click", function(event, d) {
+      event.stopPropagation();
+      // Toggle filter selection
+      if (selectedFilters.subject === d.data.name) {
+        selectedFilters.subject = null;
+      } else {
+        selectedFilters.subject = d.data.name;
+      }
+      showYearRangeStats(selectedFilters.startYear, selectedFilters.endYear, selectedLanguage);
+      loadSamplesForLanguage(selectedLanguage).then(displayBooksSample);
+      // Update stroke for filtering selection
+      path.attr("stroke", d => d.data.name === selectedFilters.subject ? "#28a745" : "#fff")
+        .attr("stroke-width", d => d.data.name === selectedFilters.subject ? 3 : 1);
+    });
+
+  // Title
+  const format = d3.format(",d");
+  path.append("title")
+    .text(d => `${d.ancestors().map(d => d.data.name).reverse().join(" / ")}\n${format(d.value)}`);
+
+  // Labels (only show for large topics, and clip to fit arc)
+  const label = svg.append("g")
+    .attr("pointer-events", "none")
+    .attr("text-anchor", "middle")
+    .style("user-select", "none")
+    .selectAll("text")
+    .data(root.descendants().slice(1))
+    .join("text")
+    .attr("dy", "0.35em")
+    .attr("fill-opacity", d => labelVisible(d.current, d))
+    .attr("transform", d => labelTransform(d.current))
+    .text(d => {
+      // Only show label if it's a large arc
+      if (!labelVisible(d.current, d)) return "";
+      // Clip label to fit arc length
+      const arcLen = (d.current.x1 - d.current.x0) * ((d.current.y0 + d.current.y1) / 2 * radius);
+      const maxChars = Math.floor(arcLen / 7); // ~7px per char
+      let name = d.data.name;
+      if (name.length > maxChars && maxChars > 3) {
+        name = name.slice(0, maxChars - 2) + "…";
+      } else if (maxChars <= 3) {
+        name = "";
+      }
+      return name;
+    });
+
+  // Center circle for zoom out
+  let currentNode = root;
+  const parent = svg.append("circle")
+    .datum(root)
+    .attr("r", 0.09 * radius)
+    .attr("fill", "#fff")
+    .attr("stroke", "#fff")
+    .attr("stroke-width", 10)
+    .attr("pointer-events", "all")
+    .style("cursor", "pointer")
+    .on("click", function(event) {
+      if (currentNode.parent) {
+        clicked(event, currentNode.parent);
+      }
+    });
+
+  // Zoom handler
+  function clicked(event, p) {
+    // If the clicked node has no children, stay in the current view
+    if (!p.children || p.children.length === 0) {
+      return;
     }
 
+  currentNode = p;
+  parent.datum(p.parent || root);
+
+    root.each(d => d.target = {
+      x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+      x1: Math.max(0, Math.min(1, (d.x1 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
+      y0: Math.max(0, d.y0 - p.depth),
+      y1: Math.max(0, d.y1 - p.depth)
+    });
+
+    const t = svg.transition().duration(event && event.altKey ? 7500 : 750);
+
+    path.transition(t)
+      .tween("data", d => {
+        const i = d3.interpolate(d.current, d.target);
+        return t => d.current = i(t);
+      })
+      .filter(function(d) {
+        return +this.getAttribute("fill-opacity") || arcVisible(d.target);
+      })
+      .attr("fill-opacity", d => arcVisible(d.target) ? (d.children ? 0.7 : 0.45) : 0)
+      .attr("pointer-events", d => arcVisible(d.target) ? "auto" : "none")
+      .attrTween("d", d => () => arc(d.current));
+
+    label.filter(function(d) {
+      return +this.getAttribute("fill-opacity") || labelVisible(d.target, d);
+    }).transition(t)
+      .attr("fill-opacity", d => labelVisible(d.target, d))
+      .attrTween("transform", d => () => labelTransform(d.current))
+      .text(function(d) {
+        if (!labelVisible(d.target, d)) return "";
+        const arcLen = (d.target.x1 - d.target.x0) * ((d.target.y0 + d.target.y1) / 2 * radius);
+        const maxChars = Math.floor(arcLen / 7);
+        let name = d.data.name;
+        if (name.length > maxChars && maxChars > 3) {
+          name = name.slice(0, maxChars - 2) + "…";
+        } else if (maxChars <= 3) {
+          name = "";
+        }
+        return name;
+      });
+
+    // Update breadcrumb
+    updateBreadcrumb(p);
+  }
+
+  // Only show labels for large topics/arcs
+  function labelVisible(d, node) {
+    // Only show if arc is large enough (angle and radius)
+    const minAngle = 0.15; // radians, about 10 degrees
+    const minArcLen = 50; // pixels
+    const angle = d.x1 - d.x0;
+    const avgRadius = ((d.y0 + d.y1) / 2) * radius;
+    const arcLen = angle * avgRadius;
+    return d.y1 <= 3 && d.y0 >= 1 && angle > minAngle && arcLen > minArcLen;
+  }
+
+  function arcVisible(d) {
+    return d.y1 <= 3 && d.y0 >= 1 && d.x1 > d.x0;
+  }
+
+  function labelTransform(d) {
+    const x = (d.x0 + d.x1) / 2 * 180 / Math.PI;
+    const y = (d.y0 + d.y1) / 2 * radius;
+    return `rotate(${x - 90}) translate(${y},0) rotate(${x < 180 ? 0 : 180})`;
+  }
+
+  function updateBreadcrumb(d) {
+    const ancestors = d.ancestors().reverse().slice(1);
+    if (ancestors.length === 0) {
+      breadcrumb.html("");
+    } else {
+      breadcrumb.html(ancestors.map((d, i) => {
+        const percent = totalCount > 0 ? (d.value / totalCount * 100).toFixed(1) : 0;
+        return `<span class="breadcrumb-item" onclick="sunburstBreadcrumbClick(event, '${d.data.name}', ${d.value})">${d.data.name}</span> (${d3.format(",")(d.value)}, ${percent}%)`;
+      }).join(" > "));
+    }
+  }
+
+  // Expose function for breadcrumb click
+  window.sunburstBreadcrumbClick = function(event, name, value) {
+    event.stopPropagation();
+    // Find the node by name and value
+    let targetNode = root.descendants().find(d => d.data.name === name && d.value === value);
+    if (targetNode) {
+      // Only zoom if the node has children
+      if (targetNode.children && targetNode.children.length > 0) {
+        clicked(event, targetNode);
+        // Clear subject filter if zooming to a higher level
+        if (targetNode !== root && targetNode.children) {
+          selectedFilters.subject = null;
+          showYearRangeStats(selectedFilters.startYear, selectedFilters.endYear, selectedLanguage);
+          loadSamplesForLanguage(selectedLanguage).then(displayBooksSample);
+          path.attr("stroke", d => d.data.name === selectedFilters.subject ? "#28a745" : "#fff")
+            .attr("stroke-width", d => d.data.name === selectedFilters.subject ? 3 : 1);
+        }
+      }
+    }
+  };
+
+  // Initial breadcrumb rendering
+  updateBreadcrumb(root);
+}
   // --- MODIFIED showYearRangeStats FUNCTION (Title/Subtitle update) ---
   function showYearRangeStats(startYear, endYear, selectedLanguage) { 
     const statsDiv = d3.select("#selection-info");
@@ -1151,7 +1469,11 @@
 
     // 1. Calculate Type Counts (Filter by selected Subject)
     if (currentSubjectFilter) {
-      if (yearSubjectCounts[currentSubjectFilter] && yearSubjectCounts[currentSubjectFilter] > 0) {
+      // Find all types that co-occur with the selected subject in this year
+      // This is a rough estimation since we don't have joint counts per year, 
+      // but it aligns with the existing filtering approach.
+      let subjectExists = Object.keys(yearSubjectCounts).some(subject => subject === currentSubjectFilter);
+      if (subjectExists) {
         Object.entries(yearTypeCounts).forEach(([type, count]) => {
           if (type && count > 0) {
             finalTypeCounts.set(type, (finalTypeCounts.get(type) || 0) + count);
@@ -1169,7 +1491,8 @@
 
     // 2. Calculate Subject Counts (Filter by selected Type)
     if (currentTypeFilter) {
-      if (yearTypeCounts[currentTypeFilter] && yearTypeCounts[currentTypeFilter] > 0) {
+      let typeExists = Object.keys(yearTypeCounts).some(type => type === currentTypeFilter);
+      if (typeExists) {
         Object.entries(yearSubjectCounts).forEach(([subject, count]) => {
           if (subject && count > 0) {
             finalSubjectCounts.set(subject, (finalSubjectCounts.get(subject) || 0) + count);
