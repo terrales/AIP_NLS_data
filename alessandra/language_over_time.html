@@ -1218,7 +1218,13 @@ function createSunburst(subjectCounts, totalCount) {
     .attr("class", "sunburst-title")
     .text("Publication Topics");
 
-  let captionText = `${d3.sum(data.children, d => d.children ? d.children.length : 0)} different subjects. Click segments to zoom in. Click leaf nodes to filter by subject.`;
+  // Count number of leaf nodes (subjects)
+  function countLeafNodes(node) {
+    if (!node.children || node.children.length === 0) return 1;
+    return node.children.reduce((sum, child) => sum + countLeafNodes(child), 0);
+  }
+  let numLeafNodes = countLeafNodes(data);
+  let captionText = `${numLeafNodes} different subjects. Click segments to zoom in. Click leaf nodes to filter by subject.`;
   if (percentMissing !== null && totalSubjects !== null && missingSubjects !== null) {
     captionText += ` <span style="color:#b00;font-size:11px;">${percentMissing.toFixed(1)}% subjects missing</span>`;
   }
@@ -1240,13 +1246,24 @@ function createSunburst(subjectCounts, totalCount) {
 
   root.each(d => d.current = d);
 
-  // Assign darkest color to largest top-level topic
-  let topTopics = data.children.map(d => ({ name: d.name, value: d3.sum((d.children||[]), c => c.value || 0) }));
-  topTopics.sort((a, b) => b.value - a.value);
-  const sunburstPalette = treemapPalette.slice();
-  while (sunburstPalette.length < topTopics.length) sunburstPalette.push(treemapPalette[treemapPalette.length - 1]);
+  // Assign darkest color to largest top-level topic (same as treemap)
+  // Recursively sum all leaf values for each top-level topic
+  function sumAllLeaves(node) {
+    if (!node.children || node.children.length === 0) {
+      return node.value || 0;
+    }
+    return node.children.reduce((acc, child) => acc + sumAllLeaves(child), 0);
+  }
+  const sortedTopics = data.children
+    .map(d => ({ name: d.name, value: sumAllLeaves(d) }))
+    .sort((a, b) => b.value - a.value);
+  let sunburstColors = treemapPalette.slice();
+  while (sunburstColors.length < sortedTopics.length) sunburstColors.push(treemapPalette[treemapPalette.length - 1]);
+  const colorScale = d3.scaleOrdinal()
+    .domain(sortedTopics.map(d => d.name))
+    .range(sunburstColors);
   const colorByTopic0 = {};
-  topTopics.forEach((t, i) => { colorByTopic0[t.name] = sunburstPalette[i % sunburstPalette.length]; });
+  sortedTopics.forEach(t => { colorByTopic0[t.name] = colorScale(t.name); });
 
   // Arc generator (smaller empty center)
   const arc = d3.arc()
@@ -1352,6 +1369,9 @@ function createSunburst(subjectCounts, totalCount) {
   path.append("title")
     .text(d => `${d.ancestors().map(d => d.data.name).reverse().join(" / ")}\n${format(d.value)}`);
 
+  // Center circle for zoom out
+  let currentNode = root;
+
   // Labels (only show for large topics, and clip to fit arc)
   const label = svg.append("g")
     .attr("pointer-events", "none")
@@ -1366,26 +1386,26 @@ function createSunburst(subjectCounts, totalCount) {
     .text(d => {
       // Only show label if it's a large arc
       if (!labelVisible(d.current, d)) return "";
-      // For leaf nodes, show only the subject name
+      // Only show names for nodes at the current visible depth (not for leaves when zoomed out)
+      // Find the current root node (zoomed node)
+      let visibleDepth = 1;
+      if (typeof currentNode !== 'undefined' && currentNode.depth !== undefined) {
+        visibleDepth = currentNode.depth + 1;
+      }
+      // Only show label if node is at the visible depth
+      if (d.depth !== visibleDepth) return "";
+      // Clip label to fit arc length
       let name = d.data.name;
-      if (!d.children || d.children.length === 0) {
-        // Leaf node: subject only
-        // (already just d.data.name)
-      } else {
-        // Non-leaf: keep as before, but clip if needed
-        const arcLen = (d.current.x1 - d.current.x0) * ((d.current.y0 + d.current.y1) / 2 * radius);
-        const maxChars = Math.floor(arcLen / 7); // ~7px per char
-        if (name.length > maxChars && maxChars > 3) {
-          name = name.slice(0, maxChars - 2) + "…";
-        } else if (maxChars <= 3) {
-          name = "";
-        }
+      const arcLen = (d.current.x1 - d.current.x0) * ((d.current.y0 + d.current.y1) / 2 * radius);
+      const maxChars = Math.floor(arcLen / 7); // ~7px per char
+      if (name.length > maxChars && maxChars > 3) {
+        name = name.slice(0, maxChars - 2) + "…";
+      } else if (maxChars <= 3) {
+        name = "";
       }
       return name;
     });
 
-  // Center circle for zoom out
-  let currentNode = root;
   const parent = svg.append("circle")
     .datum(root)
     .attr("r", 0.09 * radius)
