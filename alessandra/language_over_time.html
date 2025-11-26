@@ -455,12 +455,12 @@
   ];
   let colorByLanguage = {};
 
-  // Load subject_topic_reference.json at page load
-  fetch('./subject_topic_reference.json')
+  // Load topic_hierarchy_results.json at page load
+  fetch('./topic_hierarchy_results.json')
     .then(r => r.json())
     .then(data => { subjectTopicReference = data; })
     .catch(e => {
-    console.warn('Could not load subject_topic_reference.json:', e);
+    console.warn('Could not load topic_hierarchy_results.json:', e);
     subjectTopicReference = {};
     });
 
@@ -1087,53 +1087,120 @@
     }
     window.addEventListener('resize', redrawTreemapIfVisible);
 
-// --- D3 Sunburst (Subjects) ---
-// Zoomable sunburst adapted from Observable example, with custom color palette and subject hierarchy.
+/*
+  --- D3 Sunburst (Subjects) ---
+  Now expects subjectCounts to be in the new nested format:
+  {
+    "topic0": {
+      "topic1": {
+        "topic2": {
+          "subjects": [ {name, value}, ... ],
+          "missing_subjects": ...,
+          "total_subjects": ...,
+          "percent_missing": ...
+        }
+      }
+    }
+  }
+  If subjectCounts is empty, shows a message.
+  Displays percent missing in the caption if available.
+*/
 function createSunburst(subjectCounts, totalCount) {
   const container = d3.select("#sunburst-viz");
   container.selectAll("*").remove();
 
-  if ((!subjectTopicReference || subjectCounts.size === 0) && (!window._sunburstHasDrawn)) {
+  // Defensive: if subjectCounts is not an object or empty, show message
+  if (!subjectCounts || typeof subjectCounts !== "object" || Object.keys(subjectCounts).length === 0) {
     container.html('<p style="padding: 15px;">No subject data or topic reference available for this selection.</p>');
     return;
   }
 
-  // Build hierarchy: topic_0 > topic_1 > subject. If no topic_1, subject goes directly under topic_0.
-  const hierarchy = {};
-  for (const [subject, count] of subjectCounts.entries ? subjectCounts.entries() : []) {
-    if (count > 0) {
-      let topics = subjectTopicReference && subjectTopicReference[subject] ? subjectTopicReference[subject] : {};
-      let topic0 = topics.topic_0 || "Other";
-      let topic1 = topics.topic_1 || null;
-      if (!hierarchy[topic0]) hierarchy[topic0] = {};
-      if (topic1) {
-        if (!hierarchy[topic0][topic1]) hierarchy[topic0][topic1] = [];
-        hierarchy[topic0][topic1].push({ name: subject, value: count });
-      } else {
-        if (!hierarchy[topic0]["_direct"]) hierarchy[topic0]["_direct"] = [];
-        hierarchy[topic0]["_direct"].push({ name: subject, value: count });
+  // Recursively convert the nested format to d3 hierarchy format
+  function convertToHierarchy(obj, nodeName = "") {
+    console.log("convertToHierarchy called with:", { obj, nodeName });
+    
+    // If this is a leaf node (has "subjects" array), return as a node
+    if (obj && typeof obj === "object" && Array.isArray(obj.subjects)) {
+      console.log("Found leaf node with subjects:", obj.subjects.length);
+      return {
+        name: nodeName || "Root",
+        children: obj.subjects.map(s => ({
+          name: s.name,
+          value: s.value
+        })),
+        missing_subjects: obj.missing_subjects,
+        total_subjects: obj.total_subjects,
+        percent_missing: obj.percent_missing
+      };
+    }
+    
+    // Otherwise, it's a nested object: keys are names, values are next level
+    const children = [];
+    for (const [key, value] of Object.entries(obj)) {
+      console.log(`Processing key: ${key}`);
+      // If value is a leaf node, convert it
+      if (value && typeof value === "object" && Array.isArray(value.subjects)) {
+        console.log(`${key} is a leaf node with ${value.subjects.length} subjects`);
+        children.push({
+          name: key,
+          children: value.subjects.map(s => ({
+            name: s.name,
+            value: s.value
+          })),
+          missing_subjects: value.missing_subjects,
+          total_subjects: value.total_subjects,
+          percent_missing: value.percent_missing
+        });
+      } else if (value && typeof value === "object") {
+        // Otherwise, recurse
+        console.log(`${key} has nested structure, recursing...`);
+        const child = convertToHierarchy(value, key);
+        if (child && ((Array.isArray(child) && child.length > 0) || (child.children && child.children.length > 0))) {
+          children.push(child);
+        }
       }
     }
+    
+    console.log(`Returning ${children.length} children for ${nodeName || 'root'}`);
+    
+    // If we have a name, return as a node; otherwise return the children array
+    if (nodeName) {
+      return { name: nodeName, children };
+    }
+    return children;
   }
 
-  // Convert to d3 hierarchy format - Filter out empty branches
+  // Compose d3 hierarchy data
+  const children = convertToHierarchy(subjectCounts);
+  console.log("Raw subjectCounts:", subjectCounts);
+  console.log("Converted children:", children);
   const data = {
     name: "Subjects",
-    children: Object.entries(hierarchy).map(([topic0, topic1s]) => {
-      // topic1s: { topic1: [subjects], _direct: [subjects] }
-      let children = [];
-      Object.entries(topic1s).forEach(([topic1, subjects]) => {
-        if (topic1 === "_direct") {
-          children.push(...subjects); // subjects directly under topic0
-        } else if (subjects.length) {
-          children.push({ name: topic1, children: subjects });
-        }
-      });
-      return { name: topic0, children: children.filter(d => d && (d.children ? d.children.length : true)) };
-    }).filter(t0 => t0.children.length > 0)
+    children: children
   };
+  console.log("Final data structure:", data);
 
-  if (data.children.length === 0) {
+  // Find percent missing (search for first node with percent_missing)
+  let percentMissing = null;
+  let missingSubjects = null;
+  let totalSubjects = null;
+  function findMissingInfo(node) {
+    if (node.percent_missing !== undefined) {
+      percentMissing = node.percent_missing;
+      missingSubjects = node.missing_subjects;
+      totalSubjects = node.total_subjects;
+      return true;
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        if (findMissingInfo(child)) return true;
+      }
+    }
+    return false;
+  }
+  findMissingInfo(data);
+
+  if (!data.children || data.children.length === 0) {
     container.html('<p style="padding: 15px;">No subject data available after applying filtering rules.</p>');
     return;
   }
@@ -1150,12 +1217,17 @@ function createSunburst(subjectCounts, totalCount) {
   sunburstHeader.append("div")
     .attr("class", "sunburst-title")
     .text("Publication Topics");
+
+  let captionText = `${d3.sum(data.children, d => d.children ? d.children.length : 0)} different subjects. Click segments to zoom in. Click leaf nodes to filter by subject.`;
+  if (percentMissing !== null && totalSubjects !== null && missingSubjects !== null) {
+    captionText += ` <span style="color:#b00;font-size:11px;">${percentMissing.toFixed(1)}% subjects missing</span>`;
+  }
   sunburstHeader.append("div")
-    .text(`${subjectCounts.size} unique subjects. Click segments to zoom in. Click leaf nodes to filter by subject.`)
+    .html(captionText)
     .attr("class", "sunburst-caption")
     .style("font-size", "12px")
     .style("color", "#666")
-    .style("margin-bottom", "8px")
+    .style("margin-bottom", "8px");
 
   // D3 hierarchy and partition
   const root = d3.hierarchy(data)
@@ -1168,12 +1240,13 @@ function createSunburst(subjectCounts, totalCount) {
 
   root.each(d => d.current = d);
 
-  // Color palette: assign palette by topic_0, fallback to palette[0]
-  const topic0Names = data.children.map(d => d.name);
-  const sunburstPalette = treemapPalette;
-  while (sunburstPalette.length < topic0Names.length) sunburstPalette.push(treemapPalette[treemapPalette.length - 1]);
+  // Assign darkest color to largest top-level topic
+  let topTopics = data.children.map(d => ({ name: d.name, value: d3.sum((d.children||[]), c => c.value || 0) }));
+  topTopics.sort((a, b) => b.value - a.value);
+  const sunburstPalette = treemapPalette.slice();
+  while (sunburstPalette.length < topTopics.length) sunburstPalette.push(treemapPalette[treemapPalette.length - 1]);
   const colorByTopic0 = {};
-  topic0Names.forEach((name, i) => colorByTopic0[name] = sunburstPalette[i % sunburstPalette.length]);
+  topTopics.forEach((t, i) => { colorByTopic0[t.name] = sunburstPalette[i % sunburstPalette.length]; });
 
   // Arc generator (smaller empty center)
   const arc = d3.arc()
@@ -1293,14 +1366,20 @@ function createSunburst(subjectCounts, totalCount) {
     .text(d => {
       // Only show label if it's a large arc
       if (!labelVisible(d.current, d)) return "";
-      // Clip label to fit arc length
-      const arcLen = (d.current.x1 - d.current.x0) * ((d.current.y0 + d.current.y1) / 2 * radius);
-      const maxChars = Math.floor(arcLen / 7); // ~7px per char
+      // For leaf nodes, show only the subject name
       let name = d.data.name;
-      if (name.length > maxChars && maxChars > 3) {
-        name = name.slice(0, maxChars - 2) + "…";
-      } else if (maxChars <= 3) {
-        name = "";
+      if (!d.children || d.children.length === 0) {
+        // Leaf node: subject only
+        // (already just d.data.name)
+      } else {
+        // Non-leaf: keep as before, but clip if needed
+        const arcLen = (d.current.x1 - d.current.x0) * ((d.current.y0 + d.current.y1) / 2 * radius);
+        const maxChars = Math.floor(arcLen / 7); // ~7px per char
+        if (name.length > maxChars && maxChars > 3) {
+          name = name.slice(0, maxChars - 2) + "…";
+        } else if (maxChars <= 3) {
+          name = "";
+        }
       }
       return name;
     });
@@ -1328,8 +1407,8 @@ function createSunburst(subjectCounts, totalCount) {
       return;
     }
 
-  currentNode = p;
-  parent.datum(p.parent || root);
+    currentNode = p;
+    parent.datum(p.parent || root);
 
     root.each(d => d.target = {
       x0: Math.max(0, Math.min(1, (d.x0 - p.x0) / (p.x1 - p.x0))) * 2 * Math.PI,
@@ -1430,7 +1509,7 @@ function createSunburst(subjectCounts, totalCount) {
 
   // Initial breadcrumb rendering
   updateBreadcrumb(root);
-}
+ }
   // --- MODIFIED showYearRangeStats FUNCTION (Title/Subtitle update) ---
   function showYearRangeStats(startYear, endYear, selectedLanguage) { 
     const statsDiv = d3.select("#selection-info");
@@ -1461,61 +1540,106 @@ function createSunburst(subjectCounts, totalCount) {
     const currentSubjectFilter = selectedFilters.subject;
       
     let finalTypeCounts = new Map();
-    let finalSubjectCounts = new Map();
+    let finalSubjectCounts = null;
 
     selectedValues.forEach(d => {
-    const yearTypeCounts = d.type || {};
-    const yearSubjectCounts = d.subject || {};
+      const yearTypeCounts = d.type || {};
+      const yearSubjectCounts = d.subject || {};
 
-    // 1. Calculate Type Counts (Filter by selected Subject)
-    if (currentSubjectFilter) {
-      // Find all types that co-occur with the selected subject in this year
-      // This is a rough estimation since we don't have joint counts per year, 
-      // but it aligns with the existing filtering approach.
-      let subjectExists = Object.keys(yearSubjectCounts).some(subject => subject === currentSubjectFilter);
-      if (subjectExists) {
+      // 1. Calculate Type Counts (Filter by selected Subject)
+      if (currentSubjectFilter) {
+        let subjectExists = Object.keys(yearSubjectCounts).some(subject => subject === currentSubjectFilter);
+        if (subjectExists) {
+          Object.entries(yearTypeCounts).forEach(([type, count]) => {
+            if (type && count > 0) {
+              finalTypeCounts.set(type, (finalTypeCounts.get(type) || 0) + count);
+            }
+          });
+        }
+      } else {
         Object.entries(yearTypeCounts).forEach(([type, count]) => {
           if (type && count > 0) {
             finalTypeCounts.set(type, (finalTypeCounts.get(type) || 0) + count);
           }
         });
       }
-    } else {
-      Object.entries(yearTypeCounts).forEach(([type, count]) => {
-        if (type && count > 0) {
-          finalTypeCounts.set(type, (finalTypeCounts.get(type) || 0) + count);
-        }
-      });
-    }
-
-
-    // 2. Calculate Subject Counts (Filter by selected Type)
-    if (currentTypeFilter) {
-      let typeExists = Object.keys(yearTypeCounts).some(type => type === currentTypeFilter);
-      if (typeExists) {
-        Object.entries(yearSubjectCounts).forEach(([subject, count]) => {
-          if (subject && count > 0) {
-            finalSubjectCounts.set(subject, (finalSubjectCounts.get(subject) || 0) + count);
-          }
-        });
-      }
-    } else {
-      Object.entries(yearSubjectCounts).forEach(([subject, count]) => {
-        if (subject && count > 0) {
-          finalSubjectCounts.set(subject, (finalSubjectCounts.get(subject) || 0) + count);
-        }
-      });
-    }
     });
 
+    // For the sunburst, build a nested hierarchy for the selected year range
+    function buildNestedHierarchy(selectedValues) {
+      // Helper to merge subject counts into the hierarchy
+      function mergeCounts(ref, counts) {
+        if (!ref || typeof ref !== 'object') return null;
+        let node = {};
+        for (const key in ref) {
+          if (ref[key] && typeof ref[key] === 'object' && Array.isArray(ref[key].subjects)) {
+            // Leaf node: sum counts for this subject
+            let mergedSubjects = ref[key].subjects.map(s => {
+              let total = 0;
+              for (const year of counts) {
+                if (year.subject && year.subject[s.name]) {
+                  total += year.subject[s.name];
+                }
+              }
+              return { name: s.name, value: total };
+            }).filter(s => s.value > 0);
+            if (mergedSubjects.length > 0) {
+              node[key] = {
+                ...ref[key],
+                subjects: mergedSubjects
+              };
+            }
+          } else if (typeof ref[key] === 'object') {
+            // Nested node
+            const child = mergeCounts(ref[key], counts);
+            if (child && Object.keys(child).length > 0) {
+              node[key] = child;
+            }
+          }
+        }
+        return node;
+      }
+      return mergeCounts(subjectTopicReference, selectedValues);
+    }
+    if (!currentTypeFilter) {
+      finalSubjectCounts = buildNestedHierarchy(selectedValues);
+    } else {
+      // If a type filter is applied, keep the old logic (flat counts)
+      finalSubjectCounts = new Map();
+      selectedValues.forEach(d => {
+        const yearTypeCounts = d.type || {};
+        const yearSubjectCounts = d.subject || {};
+        let typeExists = Object.keys(yearTypeCounts).some(type => type === currentTypeFilter);
+        if (typeExists) {
+          Object.entries(yearSubjectCounts).forEach(([subject, count]) => {
+            if (subject && count > 0) {
+              finalSubjectCounts.set(subject, (finalSubjectCounts.get(subject) || 0) + count);
+            }
+          });
+        }
+      });
+    }
+
     lastTypeCounts = finalTypeCounts;
-      
     const totalTreemapCount = d3.sum(Array.from(finalTypeCounts.values()));
-    const totalSunburstCount = d3.sum(Array.from(finalSubjectCounts.values()));
-    
-    lastTotalCount = totalTreemapCount; 
-      
-    createTreemap(finalTypeCounts, currentSubjectFilter ? totalTreemapCount : totalCount); 
+    let totalSunburstCount = 0;
+    if (!currentTypeFilter && subjectTopicReference) {
+      // Try to sum all leaf subject values in the hierarchy
+      function sumSubjects(obj) {
+        if (obj && typeof obj === 'object' && Array.isArray(obj.subjects)) {
+          return obj.subjects.reduce((acc, s) => acc + (s.value || 0), 0);
+        } else if (obj && typeof obj === 'object') {
+          return Object.values(obj).reduce((acc, v) => acc + sumSubjects(v), 0);
+        }
+        return 0;
+      }
+      totalSunburstCount = sumSubjects(subjectTopicReference);
+    } else if (finalSubjectCounts instanceof Map) {
+      totalSunburstCount = d3.sum(Array.from(finalSubjectCounts.values()));
+    }
+    lastTotalCount = totalTreemapCount;
+
+    createTreemap(finalTypeCounts, currentSubjectFilter ? totalTreemapCount : totalCount);
     createSunburst(finalSubjectCounts, currentTypeFilter ? totalSunburstCount : totalCount);
   }
 
