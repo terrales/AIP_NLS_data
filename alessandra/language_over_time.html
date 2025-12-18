@@ -1042,6 +1042,9 @@
           }
           showYearRangeStats(selectedFilters.startYear, selectedFilters.endYear, selectedLanguage);
           loadSamplesForLanguage(selectedLanguage).then(displayBooksSample);
+          // Scroll to sample records on filter
+          const sampleDiv = document.getElementById('books-sample');
+          if (sampleDiv) sampleDiv.scrollIntoView({behavior: 'smooth', block: 'center'});
         });
 
       cell.append("clipPath")
@@ -1362,6 +1365,9 @@ function createSunburst(subjectCounts, totalCount) {
       // Update stroke for filtering selection
       path.attr("stroke", d => d.data.name === selectedFilters.subject ? "#28a745" : "#fff")
         .attr("stroke-width", d => d.data.name === selectedFilters.subject ? 3 : 1);
+      // Scroll to sample records on filter
+      const sampleDiv = document.getElementById('books-sample');
+      if (sampleDiv) sampleDiv.scrollIntoView({behavior: 'smooth', block: 'center'});
     });
 
   // Title

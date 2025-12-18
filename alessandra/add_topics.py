@@ -7,9 +7,9 @@ import math
 
 # Step 1: Load the sample CSV with topic modeling
 print("Loading sample CSV with topic modeling...")
-sample_df = pd.read_csv('./2_layer_topic.csv')
+sample_df = pd.read_csv('./layer_3_topics_all.csv')
 print(f"Sample contains {len(sample_df)} records with topics")
-
+"""
 # Step 2: Build subject-to-topic mapping from sample
 print("\nBuilding subject-to-topic mapping...")
 subject_to_topics = {}
@@ -17,6 +17,7 @@ for _, row in sample_df.iterrows():
     subject = row.get('subject')
     topic_0 = row.get('topic_0')
     topic_1 = row.get('topic_1')
+    topic_2 = row.get('topic_2')
     if pd.notna(subject) and subject and pd.notna(topic_0):
         subject = str(subject).strip()
         # Normalise by removing trailing period
@@ -25,10 +26,61 @@ for _, row in sample_df.iterrows():
         if subject not in subject_to_topics:
             subject_to_topics[subject] = {
                 'topic_0': topic_0,
-                'topic_1': topic_1
+                'topic_1': topic_1,
+                'topic_2:': topic_2
             }
-print(f"Mapped {len(subject_to_topics)} unique subjects to topics")
+"""
+# Build topic hierarchy from scratch: topic_2 -> topic_1 -> topic_0 -> subjects (with counts)
+from collections import defaultdict
 
+topic_hierarchy = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+subject_topic_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(int))))
+missing_subject_counts = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
+
+for _, row in sample_df.iterrows():
+    subject = row.get('subject')
+    topic_0 = row.get('topic_0')
+    topic_1 = row.get('topic_1')
+    topic_2 = row.get('topic_2')
+    # Only require topics to be present, subject can be missing (NaN)
+    if pd.notna(topic_0) and pd.notna(topic_1) and pd.notna(topic_2):
+        if pd.notna(subject) and subject:
+            subject_clean = str(subject).strip()
+            if subject_clean.endswith('.'):
+                subject_clean = subject_clean[:-1].strip()
+            # Count subject occurrence
+            subject_topic_counts[topic_2][topic_1][topic_0][subject_clean] += 1
+        else:
+            # Count missing subject
+            missing_subject_counts[topic_2][topic_1][topic_0] += 1
+
+# Prepare the nested topic hierarchy with subject names and values (counts)
+topic_hierarchy_json = {}
+for t2, t1s in subject_topic_counts.items():
+    topic_hierarchy_json[t2] = {}
+    for t1, t0s in t1s.items():
+        topic_hierarchy_json[t2][t1] = {}
+        for t0, subj_counts in t0s.items():
+            subjects_list = [
+                {'name': subj, 'value': count}
+                for subj, count in subj_counts.items()
+            ]
+            total = sum(subj_counts.values()) + missing_subject_counts[t2][t1][t0]
+            missing = missing_subject_counts[t2][t1][t0]
+            percent_missing = (missing / total * 100) if total else 0
+            topic_hierarchy_json[t2][t1][t0] = {
+                'subjects': subjects_list,
+                'missing_subjects': missing,
+                'total_subjects': total,
+                'percent_missing': percent_missing
+            }
+
+with open('topic_hierarchy_results.json', 'w') as f:
+    json.dump(topic_hierarchy_json, f, indent=2)
+print("\nSaved topic hierarchy results to topic_hierarchy_results.json.")
+
+
+""""
 # Step 3: Load the original CSV data
 print("\nLoading original CSV data...")
 csv_df = pd.read_csv('./data_cleaned.csv')
@@ -56,6 +108,7 @@ for lang in languages:
         # Topic aggregation using both subject and title
         topic_0_counts = Counter()
         topic_1_counts = Counter()
+        topic_2_counts = Counter()
         subjects_matched = 0
         # Track which records have been matched to avoid double-counting
         matched_indices = set()
@@ -73,6 +126,8 @@ for lang in languages:
                             topic_0_counts[topic_info['topic_0']] += 1
                         if topic_info['topic_1']:
                             topic_1_counts[topic_info['topic_1']] += 1
+                        if topic_info['topic_2:']:
+                            topic_2_counts[topic_info['topic_2:']] += 1
                         matched = True
                         # Only count once per record
                         break
@@ -87,6 +142,7 @@ for lang in languages:
             'subject': subject_counts,
             'topic_0': dict(topic_0_counts) if topic_0_counts else {},
             'topic_1': dict(topic_1_counts) if topic_1_counts else {},
+            'topic_2': dict(topic_2_counts) if topic_2_counts else {},
             'topics_coverage': {
                 'total_items': count,
                 'items_with_topics': subjects_matched,
@@ -106,7 +162,7 @@ json_data = {'series': series_list}
 # Utility function to ensure all floats that are NaN are converted to None
 import numpy as np
 def deep_clean_nan(data):
-    """Recursively converts float('nan') values in a dict/list to None and numpy types to native Python types for valid JSON."""
+    # Recursively converts float('nan') values in a dict/list to None and numpy types to native Python types for valid JSON.
     if isinstance(data, dict):
         return {k: deep_clean_nan(v) for k, v in data.items()}
     elif isinstance(data, list):
@@ -160,3 +216,4 @@ print("FILES CREATED")
 print("="*60)
 print("  - enriched_frequency_data.json (your enriched JSON)")
 print("  - subject_topic_reference.json (subject→topic lookup)")
+"""
