@@ -19,24 +19,37 @@
         .sidebar {
             width: 300px;
             background: none;
-            overflow-y: auto;
-            padding: 20px;
+            overflow-y: scroll;
+            padding: 12px 8px 12px 8px;
             box-shadow: none;
             height: 100vh;
+            scrollbar-width: thin;
+            scrollbar-color: #b8aadb #f0f0f0;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 10px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #b8aadb;
+            border-radius: 6px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: #f0f0f0;
         }
         .language-item {
             cursor: pointer;
-            padding: 8px 12px;
-            margin: 6px 0;
+            padding: 3px 6px;
+            margin: 0.5px 0;
             border-radius: 6px;
             transition: all 0.2s;
             font-weight: 600;
             text-align: center;
             background: transparent;
+            line-height: 0.8;
         }
         .language-item:hover {
             background: rgba(170, 135, 251, 0.587);
-            transform: translateX(-5px);
+            transform: translateX(-3px);
         }
         .tooltip {
             position: absolute;
@@ -121,14 +134,13 @@
                 const g = svg.append("g");
 
                 const palette = [
-                    "#14143b",
-                    "#302e67",
-                    "#3e3b7f",
-                    "#4e4a97",
-                    "#5d58b0",
-                    "#6e67ca",
-                    "#7e77e4",
-                    "#8f87ff"
+                    '#14143b',
+                    '#332e58',
+                    '#524a77',
+                    '#736997',
+                    '#9589b9',
+                    '#b8aadb',
+                    '#dccdff'
                 ];
                 const maxFreq = d3.max(data, d => d.frequency);
                 const minFreq = d3.min(data, d => d.frequency);
@@ -256,9 +268,10 @@
 
                 // Create sidebar language list - alphabetically sorted
                 const sortedData = [...data].sort((a, b) => a.language.localeCompare(b.language));
+                // Make smaller languages much smaller in sidebar
                 const fontScale = d3.scaleLog()
                     .domain([minFreq, maxFreq])
-                    .range([15, 45]);
+                    .range([8, 38]);
 
                 const languageList = d3.select("#language-list");
                 

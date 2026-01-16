@@ -1,0 +1,199 @@
+[
+  {
+    "year": 1450,
+    "label": "Late Middle Ages / Great Vowel Shift Begins (1400 – c. 1600)",
+    "impact": "A major phonetic change that redefined English **pronunciation**, marking the transition from Middle to Early Modern English.",
+    "languages": ["Middle English", "Early Modern English"],
+    "url": "https://en.wikipedia.org/wiki/Great_Vowel_Shift"
+  },
+  {
+    "year": 1476,
+    "label": "The Printing Revolution in England",
+    "impact": "William Caxton's press drives the **standardization of spelling and grammar** toward the London/Chancery dialect.",
+    "languages": ["Early Modern English", "Latin"],
+    "url": "https://en.wikipedia.org/wiki/William_Caxton"
+  },
+  {
+    "year": 1500,
+    "label": "The Renaissance (c. 1500–1650)",
+    "impact": "Massive influx of **classical loanwords** (Latin/Greek) to express new concepts in science, art, and philosophy, greatly enriching the English lexicon.",
+    "languages": ["Early Modern English", "Latin", "Greek"],
+    "url": "https://en.wikipedia.org/wiki/English_Renaissance"
+  },
+  {
+    "year": 1536,
+    "label": "Acts of Union (England–Wales) (1536–1543)",
+    "impact": "Welsh officially suppressed in administration and law; English becomes the sole language of government in Wales.",
+    "languages": ["English", "Welsh"],
+    "url": "https://en.wikipedia.org/wiki/Laws_in_Wales_Acts_1535_and_1542"
+  },
+  {
+    "year": 1600,
+    "label": "East India Company founded",
+    "impact": "Early English influence in India begins; first major step in the global spread of English.",
+    "languages": [ "Hindi", "Urdu", "Bengali"],
+    "url": "https://en.wikipedia.org/wiki/East_India_Company"
+  },
+  {
+    "year": 1603,
+    "label": "Union of the Crowns (England–Scotland)",
+    "impact": "English gains prestige in Scotland, influencing official and literary Scots.",
+    "languages": ["English", "Scots", "Scottish Gaelic"],
+    "url": "https://en.wikipedia.org/wiki/Union_of_the_Crowns"
+  },
+  {
+    "year": 1607,
+    "label": "Start of American Colonization (Jamestown)",
+    "impact": "English begins its geographical spread and the development of distinct **North American dialects**.",
+    "languages": ["Indigenous American languages"],
+    "url": "https://en.wikipedia.org/wiki/Colonial_history_of_the_United_States"
+  },
+  {
+    "year": 1707,
+    "label": "Acts of Union (England–Scotland)",
+    "impact": "London-centered English strengthens; Scots marginalized in print.",
+    "languages": ["English", "Scots", "Welsh"],
+    "url": "https://en.wikipedia.org/wiki/Acts_of_Union_1707"
+  },
+  {
+    "year": 1745,
+    "label": "Jacobite Rebellion defeat",
+    "impact": "Gaelic-speaking Highlands face repression; English spreads via schooling.",
+    "languages": ["English", "Scottish Gaelic"],
+    "url": "https://en.wikipedia.org/wiki/Jacobite_rising_of_1745"
+  },
+  {
+    "year": 1755,
+    "label": "The Age of Dictionaries and Standardization",
+    "impact": "Samuel Johnson's dictionary published, codifying spelling and usage and influencing prescriptive grammar.",
+    "languages": ["English"],
+    "url": "https://en.wikipedia.org/wiki/A_Dictionary_of_the_English_Language"
+  },
+  {
+    "year": 1757,
+    "label": "Battle of Plassey",
+    "impact": "British consolidate control in Bengal (English/Urdu influence).",
+    "languages": ["Hindi", "Urdu", "Bengali"],
+    "url": "https://en.wikipedia.org/wiki/Battle_of_Plassey"
+  },
+  {
+    "year": 1788,
+    "label": "First Fleet arrives in Australia",
+    "impact": "Establishment of **Australian English**; contact with Indigenous languages.",
+    "languages": ["Indigenous Australian languages"],
+    "url": "https://en.wikipedia.org/wiki/First_Fleet"
+  },
+  {
+    "year": 1795,
+    "label": "Cape Colony British control",
+    "impact": "English influence in South Africa begins; Afrikaans affected.",
+    "languages": ["Afrikaans"],
+    "url": "https://en.wikipedia.org/wiki/Cape_Colony"
+  },
+  {
+    "year": 1801,
+    "label": "Act of Union (Great Britain–Ireland)",
+    "impact": "English consolidates as administrative language.",
+    "languages": ["English", "Irish", "Hindi", "Bengali", "Afrikaans"],
+    "url": "https://en.wikipedia.org/wiki/Acts_of_Union_1800"
+  },
+  {
+    "year": 1815,
+    "label": "British take control of Sri Lanka",
+    "impact": "Tamil/Sinhalese under colonial administration.",
+    "languages": ["Tamil", "Sinhalese"],
+    "url": "https://en.wikipedia.org/wiki/British_Ceylon"
+  },
+  {
+    "year": 1858,
+    "label": "British Raj established in India",
+    "impact": "English becomes administrative/educational language across the subcontinent.",
+    "languages": ["Hindi", "Urdu", "Bengali"],
+    "url": "https://en.wikipedia.org/wiki/British_Raj"
+  },
+  {
+    "year": 1872,
+    "label": "Scottish Education Act",
+    "impact": "English becomes dominant in Scottish schools; Gaelic use declines further.",
+    "languages": ["English", "Scottish Gaelic"],
+    "url": "https://en.wikipedia.org/wiki/Education_(Scotland)_Act_1872"
+  },
+  {
+    "year": 1880,
+    "label": "Colonization in Africa intensifies (1880s)",
+    "impact": "English, Swahili, Yoruba, Xhosa formalized in administration; establishment of African Englishes.",
+    "languages": ["Swahili", "Yoruba", "Xhosa"],
+    "url": "https://en.wikipedia.org/wiki/Scramble_for_Africa"
+  },
+  {
+    "year": 1893,
+    "label": "Welsh Intermediate Education Act",
+    "impact": "Begins revival of Welsh education.",
+    "languages": ["Welsh", "English"],
+    "url": "https://en.wikipedia.org/wiki/Welsh_Intermediate_Education_Act_1889"
+  },
+  {
+    "year": 1914,
+    "label": "Start of World War I (1914–1918)",
+    "impact": "Introduces widespread new **technical and military vocabulary**; increased contact between British and American English speakers.",
+    "languages": ["English", "German", "French"],
+    "url": "https://en.wikipedia.org/wiki/World_War_I"
+  },
+  {
+    "year": 1939,
+    "label": "Start of World War II (1939–1945)",
+    "impact": "Accelerates the adoption of **American English terms** globally due to US military and media influence; further technical jargon enters the language.",
+    "languages": ["English", "German", "Japanese", "Italian", "Russian", "Polish"],
+    "url": "https://en.wikipedia.org/wiki/World_War_II"
+  },
+  {
+    "year": 1940,
+    "label": "Celtic revival movements (1940s–1970s)",
+    "impact": "Gaelic, Welsh, Irish language revival efforts intensify.",
+    "languages": ["Scottish Gaelic", "Welsh", "Irish"],
+    "url": "https://en.wikipedia.org/wiki/Celtic_Revival"
+  },
+  {
+    "year": 1947,
+    "label": "Independence of India & Pakistan",
+    "impact": "Shift from English to local languages in official use; establishment of **World Englishes**.",
+    "languages": ["Hindi", "Urdu", "Bengali"],
+    "url": "https://en.wikipedia.org/wiki/Partition_of_India"
+  },
+  {
+    "year": 1955,
+    "label": "Vietnam War Era (1955–1975)",
+    "impact": "Exposure to new terminology and cultural concepts in American and global media; US geopolitical focus increases the prominence of American English.",
+    "languages": ["English (American)", "Vietnamese"],
+    "url": "https://en.wikipedia.org/wiki/Vietnam_War"
+  },
+  {
+    "year": 1960,
+    "label": "African nations gain independence (1960s)",
+    "impact": "English maintains a role as official language in many nations; local languages gain print presence.",
+    "languages": ["Swahili", "Yoruba", "Xhosa"],
+    "url": "https://en.wikipedia.org/wiki/Decolonisation_of_Africa"
+  },
+  {
+    "year": 1991,
+    "label": "Start of the Internet Age / Digital Revolution",
+    "impact": "Massive influx of **computing and digital terminology**; English becomes the dominant language of early internet and technology.",
+    "languages": ["English", "Mandarin", "Spanish"],
+    "url": "https://en.wikipedia.org/wiki/Internet_in_the_United_States"
+  },
+  {
+    "year": 1993,
+    "label": "Welsh Language Act (UK)",
+    "impact": "Establishes the principle of **equal validity** for Welsh and English in public business in Wales, significantly boosting Welsh status.",
+    "languages": ["Welsh", "English"],
+    "url": "https://en.wikipedia.org/wiki/Welsh_Language_Act_1993"
+  },
+  {
+    "year": 1998,
+    "label": "Gaelic Language (Scotland) Act preparation era",
+    "impact": "Moves toward official recognition of Gaelic.",
+    "languages": ["Scottish Gaelic"],
+    "url": "https://en.wikipedia.org/wiki/Gaelic_Language_(Scotland)_Act_2005"
+  }
+]
+  
