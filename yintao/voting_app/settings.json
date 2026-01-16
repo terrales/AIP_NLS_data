@@ -1,0 +1,32 @@
+{
+  "settings": [
+    {
+      "id": "setting_1_original",
+      "name": "Original Order",
+      "description": "topic_0 -> topic_1 -> topic_2 (original hierarchy)",
+      "data_file": "/disk/scratch/s1891075/AIP_NLS_data/yintao/voting_app/mock_data/setting_1_original.csv",
+      "topic_columns": ["topic_0", "topic_1", "topic_2"]
+    },
+    {
+      "id": "setting_2_shift_up",
+      "name": "Shift Up",
+      "description": "topic_1 -> topic_2 -> topic_0 (shifted up)",
+      "data_file": "/disk/scratch/s1891075/AIP_NLS_data/yintao/voting_app/mock_data/setting_2_shift_up.csv",
+      "topic_columns": ["topic_0", "topic_1", "topic_2"]
+    },
+    {
+      "id": "setting_3_shift_down",
+      "name": "Shift Down",
+      "description": "topic_2 -> topic_0 -> topic_1 (shifted down)",
+      "data_file": "/disk/scratch/s1891075/AIP_NLS_data/yintao/voting_app/mock_data/setting_3_shift_down.csv",
+      "topic_columns": ["topic_0", "topic_1", "topic_2"]
+    },
+    {
+      "id": "setting_4_reverse",
+      "name": "Reverse Order",
+      "description": "topic_2 -> topic_1 -> topic_0 (reversed)",
+      "data_file": "/disk/scratch/s1891075/AIP_NLS_data/yintao/voting_app/mock_data/setting_4_reverse.csv",
+      "topic_columns": ["topic_0", "topic_1", "topic_2"]
+    }
+  ]
+}

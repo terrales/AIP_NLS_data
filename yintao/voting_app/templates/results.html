@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Topic Voting</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            color: #666;
+        }
+
+        .nav-links {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .nav-links a {
+            color: #4a90d9;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .nav-links a:hover {
+            background: #e8f0fe;
+        }
+
+        .stats-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .panel h2 .badge {
+            font-size: 0.7rem;
+            background: #667eea;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: normal;
+        }
+
+        .leaderboard {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .leaderboard th {
+            text-align: left;
+            padding: 12px 15px;
+            color: #888;
+            font-weight: 500;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .leaderboard td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+
+        .leaderboard tr:hover {
+            background: #fafafa;
+        }
+
+        .rank {
+            font-weight: bold;
+            font-size: 1.2rem;
+            color: #333;
+            width: 50px;
+        }
+
+        .rank-1 { color: #ffd700; }
+        .rank-2 { color: #c0c0c0; }
+        .rank-3 { color: #cd7f32; }
+
+        .setting-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .setting-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .setting-desc {
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .elo-score {
+            font-weight: bold;
+            font-size: 1.3rem;
+            color: #333;
+        }
+
+        .elo-ci {
+            font-size: 0.8rem;
+            color: #888;
+            margin-left: 5px;
+        }
+
+        .ci-bar-container {
+            width: 200px;
+            position: relative;
+            height: 30px;
+        }
+
+        .ci-bar {
+            position: absolute;
+            height: 8px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .ci-point {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #333;
+            border-radius: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        .win-rate {
+            font-weight: 500;
+            color: #4a90d9;
+        }
+
+        .record {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .matchups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .matchup-card {
+            background: #f9f9f9;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .matchup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #888;
+        }
+
+        .matchup-teams {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .matchup-team {
+            flex: 1;
+            text-align: center;
+        }
+
+        .matchup-team-name {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .matchup-team-wins {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .matchup-vs {
+            color: #888;
+            font-weight: bold;
+        }
+
+        .winner {
+            color: #27ae60;
+        }
+
+        .loser {
+            color: #e74c3c;
+        }
+
+        .tied {
+            color: #f39c12;
+        }
+
+        .refresh-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: transform 0.2s;
+        }
+
+        .refresh-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .last-updated {
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .methodology {
+            background: #f0f4ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.9rem;
+            color: #555;
+        }
+
+        .methodology h4 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .methodology ul {
+            margin-left: 20px;
+        }
+
+        .methodology li {
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #888;
+        }
+
+        @media (max-width: 768px) {
+            .leaderboard th:nth-child(4),
+            .leaderboard td:nth-child(4) {
+                display: none;
+            }
+
+            .ci-bar-container {
+                width: 100px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Leaderboard</h1>
+            <p>Topic classification settings ranked by human preference</p>
+            <div class="nav-links">
+                <a href="/">Vote Now</a>
+                <a href="/admin">Manage Settings</a>
+            </div>
+        </header>
+
+        <div class="stats-summary" id="stats-summary">
+            <div class="stat-card">
+                <div class="stat-value" id="total-votes">-</div>
+                <div class="stat-label">Total Votes</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="total-settings">-</div>
+                <div class="stat-label">Settings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bootstrap-rounds">-</div>
+                <div class="stat-label">Bootstrap Rounds</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>
+                Rankings
+                <span class="badge">Elo Rating with 95% CI</span>
+            </h2>
+            <table class="leaderboard" id="leaderboard">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Setting</th>
+                        <th>Elo Score</th>
+                        <th>95% Confidence Interval</th>
+                        <th>Win Rate</th>
+                        <th>Record (W/L/T)</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    <tr><td colspan="6" class="loading">Loading...</td></tr>
+                </tbody>
+            </table>
+
+            <div class="methodology">
+                <h4>Methodology</h4>
+                <ul>
+                    <li><strong>Elo Rating:</strong> Bradley-Terry model using online Elo updates (K=32, scale=400)</li>
+                    <li><strong>Confidence Intervals:</strong> 95% CI computed via bootstrap resampling (1000 rounds)</li>
+                    <li><strong>Win Rate:</strong> (Wins + 0.5 * Ties) / Total matches</li>
+                    <li><strong>Ties:</strong> Counted as 0.5 wins for both settings in Elo calculation</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>Head-to-Head Matchups</h2>
+            <div class="matchups-grid" id="matchups">
+                <div class="loading">Loading...</div>
+            </div>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px;">
+            <span class="last-updated" id="last-updated"></span>
+            <button class="refresh-btn" onclick="loadResults()">Refresh Results</button>
+        </div>
+    </div>
+
+    <script>
+        let minElo = 900;
+        let maxElo = 1100;
+
+        async function loadResults() {
+            try {
+                const response = await fetch('/api/results');
+                const data = await response.json();
+
+                // Update stats
+                document.getElementById('total-votes').textContent = data.total_votes;
+                document.getElementById('total-settings').textContent = data.rankings.length;
+                document.getElementById('bootstrap-rounds').textContent = data.bootstrap_rounds;
+
+                // Calculate Elo range for visualization
+                if (data.rankings.length > 0) {
+                    const elos = data.rankings.flatMap(r => [r.ci_lower, r.ci_upper]);
+                    minElo = Math.min(...elos) - 20;
+                    maxElo = Math.max(...elos) + 20;
+                }
+
+                renderLeaderboard(data.rankings);
+                renderMatchups(data.matchups);
+
+                document.getElementById('last-updated').textContent =
+                    `Last updated: ${new Date().toLocaleTimeString()}`;
+            } catch (error) {
+                console.error('Error loading results:', error);
+            }
+        }
+
+        function renderLeaderboard(rankings) {
+            const tbody = document.getElementById('leaderboard-body');
+
+            if (rankings.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="loading">No votes yet. Start voting to see rankings!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = rankings.map((r, i) => {
+                const rankClass = i < 3 ? `rank-${i + 1}` : '';
+                const ciBarStyle = getCIBarStyle(r.ci_lower, r.elo, r.ci_upper);
+
+                return `
+                    <tr>
+                        <td class="rank ${rankClass}">#${i + 1}</td>
+                        <td>
+                            <div class="setting-info">
+                                <span class="setting-name">${r.name}</span>
+                                ${r.description ? `<span class="setting-desc">${r.description}</span>` : ''}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="elo-score">${r.elo}</span>
+                            <span class="elo-ci">${r.ci_range}</span>
+                        </td>
+                        <td>
+                            <div class="ci-bar-container">
+                                <div class="ci-bar" style="${ciBarStyle.bar}"></div>
+                                <div class="ci-point" style="${ciBarStyle.point}"></div>
+                            </div>
+                        </td>
+                        <td class="win-rate">${r.win_rate}%</td>
+                        <td class="record">${r.wins}/${r.losses}/${r.ties}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function getCIBarStyle(lower, point, upper) {
+            const range = maxElo - minElo;
+            const leftPct = ((lower - minElo) / range) * 100;
+            const widthPct = ((upper - lower) / range) * 100;
+            const pointPct = ((point - minElo) / range) * 100;
+
+            return {
+                bar: `left: ${leftPct}%; width: ${widthPct}%;`,
+                point: `left: ${pointPct}%;`
+            };
+        }
+
+        function renderMatchups(matchups) {
+            const container = document.getElementById('matchups');
+
+            if (matchups.length === 0) {
+                container.innerHTML = '<div class="loading">No matchups yet</div>';
+                return;
+            }
+
+            container.innerHTML = matchups.map(m => {
+                const s1Wins = m.setting_1.wins;
+                const s2Wins = m.setting_2.wins;
+                let s1Class = '', s2Class = '';
+
+                if (s1Wins > s2Wins) {
+                    s1Class = 'winner';
+                    s2Class = 'loser';
+                } else if (s2Wins > s1Wins) {
+                    s1Class = 'loser';
+                    s2Class = 'winner';
+                } else if (m.ties > 0) {
+                    s1Class = s2Class = 'tied';
+                }
+
+                return `
+                    <div class="matchup-card">
+                        <div class="matchup-header">
+                            <span>${m.total} battles</span>
+                            <span>${m.ties} ties</span>
+                        </div>
+                        <div class="matchup-teams">
+                            <div class="matchup-team">
+                                <div class="matchup-team-name">${m.setting_1.name}</div>
+                                <div class="matchup-team-wins ${s1Class}">${s1Wins}</div>
+                            </div>
+                            <div class="matchup-vs">vs</div>
+                            <div class="matchup-team">
+                                <div class="matchup-team-name">${m.setting_2.name}</div>
+                                <div class="matchup-team-wins ${s2Class}">${s2Wins}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Initial load
+        loadResults();
+
+        // Auto-refresh every 10 seconds
+        setInterval(loadResults, 10000);
+    </script>
+</body>
+</html>

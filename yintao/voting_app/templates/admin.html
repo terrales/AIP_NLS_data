@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Topic Voting</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .nav-links a {
+            color: #4a90d9;
+            text-decoration: none;
+        }
+
+        .nav-links a:hover {
+            text-decoration: underline;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 8px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 1rem;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .settings-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .settings-list th,
+        .settings-list td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .settings-list th {
+            color: #888;
+            font-weight: normal;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+
+        .settings-list tr:hover {
+            background: #f9f9f9;
+        }
+
+        .setting-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .setting-desc {
+            color: #888;
+            font-size: 0.9rem;
+        }
+
+        .setting-file {
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: #666;
+            word-break: break-all;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #f0f0f0;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            margin: 2px;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .presets {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .preset-btn {
+            padding: 8px 16px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+
+        .preset-btn:hover {
+            background: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Settings Management</h1>
+            <p class="nav-links"><a href="/">Back to Voting</a></p>
+        </header>
+
+        <div id="alert" class="alert hidden"></div>
+
+        <div class="panel">
+            <h2>Add New Setting</h2>
+
+            <div class="presets">
+                <span style="color:#888;line-height:32px;">Quick presets:</span>
+                <button class="preset-btn" onclick="loadPreset('layer3')">Layer 3 Topics</button>
+                <button class="preset-btn" onclick="loadPreset('layer2')">Layer 2 Topics</button>
+            </div>
+
+            <form id="add-form">
+                <div class="form-group">
+                    <label for="setting-id">Setting ID</label>
+                    <input type="text" id="setting-id" placeholder="e.g., kmeans_gpt4_bge" required>
+                    <small>Unique identifier (no spaces, use underscores)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="setting-name">Display Name</label>
+                    <input type="text" id="setting-name" placeholder="e.g., KMeans + GPT-4 + BGE Embeddings" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="setting-desc">Description</label>
+                    <textarea id="setting-desc" rows="2" placeholder="Optional description of this setting"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="data-file">Data File Path</label>
+                    <input type="text" id="data-file" placeholder="/path/to/data.csv or .parquet" required>
+                    <small>Absolute path to CSV or Parquet file</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="topic-columns">Topic Columns (comma-separated)</label>
+                    <input type="text" id="topic-columns" placeholder="e.g., topic_0,topic_1,topic_2" required>
+                    <small>Column names that contain the topic labels</small>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Add Setting</button>
+            </form>
+        </div>
+
+        <div class="panel">
+            <h2>Existing Settings</h2>
+            <table class="settings-list" id="settings-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Data File</th>
+                        <th>Topic Columns</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="settings-body">
+                    <tr><td colspan="4" style="text-align:center;color:#888;">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const BASE_PATH = '/disk/scratch/s1891075/AIP_NLS_data/yintao/';
+
+        function loadPreset(preset) {
+            if (preset === 'layer3') {
+                document.getElementById('setting-id').value = 'layer3_default';
+                document.getElementById('setting-name').value = 'Layer 3 Topics (Default)';
+                document.getElementById('setting-desc').value = 'Original 3-layer topic hierarchy';
+                document.getElementById('data-file').value = BASE_PATH + 'layer_3_topics_all.csv';
+                document.getElementById('topic-columns').value = 'topic_0,topic_1,topic_2';
+            } else if (preset === 'layer2') {
+                document.getElementById('setting-id').value = 'layer2_default';
+                document.getElementById('setting-name').value = 'Layer 2 Topics (Default)';
+                document.getElementById('setting-desc').value = 'Original 2-layer topic hierarchy';
+                document.getElementById('data-file').value = BASE_PATH + 'layer_2_topics_all.csv';
+                document.getElementById('topic-columns').value = 'topic_0,topic_1';
+            }
+        }
+
+        function showAlert(message, type) {
+            const alert = document.getElementById('alert');
+            alert.textContent = message;
+            alert.className = `alert alert-${type}`;
+            alert.classList.remove('hidden');
+            setTimeout(() => alert.classList.add('hidden'), 5000);
+        }
+
+        async function loadSettings() {
+            try {
+                const response = await fetch('/api/settings');
+                const settings = await response.json();
+
+                const tbody = document.getElementById('settings-body');
+
+                if (settings.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#888;">No settings yet. Add your first setting above.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = settings.map(s => `
+                    <tr>
+                        <td>
+                            <div class="setting-name">${s.name}</div>
+                            <div class="setting-desc">${s.description || ''}</div>
+                        </td>
+                        <td class="setting-file">${s.data_file}</td>
+                        <td>
+                            ${s.topic_columns.map(c => `<span class="tag">${c}</span>`).join('')}
+                        </td>
+                        <td>
+                            <button class="btn btn-danger" onclick="deleteSetting('${s.id}')">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (error) {
+                showAlert('Error loading settings: ' + error.message, 'error');
+            }
+        }
+
+        document.getElementById('add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = {
+                id: document.getElementById('setting-id').value.trim(),
+                name: document.getElementById('setting-name').value.trim(),
+                description: document.getElementById('setting-desc').value.trim(),
+                data_file: document.getElementById('data-file').value.trim(),
+                topic_columns: document.getElementById('topic-columns').value.split(',').map(c => c.trim()).filter(c => c)
+            };
+
+            try {
+                const response = await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    showAlert(result.error, 'error');
+                } else {
+                    showAlert('Setting added successfully!', 'success');
+                    document.getElementById('add-form').reset();
+                    loadSettings();
+                }
+            } catch (error) {
+                showAlert('Error adding setting: ' + error.message, 'error');
+            }
+        });
+
+        async function deleteSetting(id) {
+            if (!confirm('Are you sure you want to delete this setting?')) return;
+
+            // For now, we'll reload settings from storage and filter out this one
+            // In a real app, you'd have a proper DELETE endpoint
+            showAlert('Delete functionality not implemented yet - edit settings.json manually', 'error');
+        }
+
+        // Initial load
+        loadSettings();
+    </script>
+</body>
+</html>
