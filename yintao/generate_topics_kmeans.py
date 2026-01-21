@@ -36,7 +36,7 @@ from datetime import datetime
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 # Slack Configuration
-SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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'
+SLACK_WEBHOOK_URL = 'https://xxxxx'
 
 
 def send_slack_notification(message, is_error=False):
